@@ -1,4 +1,4 @@
-package com.das3kn.iz.ui.components
+package com.das3kn.iz.ui.theme.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

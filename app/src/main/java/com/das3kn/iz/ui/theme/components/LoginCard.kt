@@ -1,4 +1,4 @@
-package com.das3kn.iz.ui.components
+package com.das3kn.iz.ui.theme.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -24,8 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.das3kn.iz.ui.components.button.PrimaryButton
-import com.das3kn.iz.ui.components.textField.TextFieldWithIcon
+import com.das3kn.iz.ui.theme.components.button.PrimaryButton
+import com.das3kn.iz.ui.theme.components.textField.TextFieldWithIcon
 
 @Composable
 fun LoginCard(modifier: Modifier = Modifier) {

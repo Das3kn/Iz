@@ -1,4 +1,4 @@
-package com.das3kn.iz.ui.components.button
+package com.das3kn.iz.ui.theme.components.button
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button

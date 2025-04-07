@@ -1,4 +1,4 @@
-package com.das3kn.iz.ui.components.textField
+package com.das3kn.iz.ui.theme.components.textField
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
