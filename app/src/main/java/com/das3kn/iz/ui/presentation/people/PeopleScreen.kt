@@ -1,4 +1,4 @@
-package com.das3kn.iz.ui.presentation.groups
+package com.das3kn.iz.ui.presentation.people
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
@@ -26,8 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -37,16 +33,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.das3kn.iz.R
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
-import com.das3kn.iz.ui.presentation.people.PeopleItem
 import com.das3kn.iz.ui.theme.components.button.SecondaryButton
 import com.das3kn.iz.ui.theme.components.textField.TextFieldWithEndIcon
 
 @Composable
-fun GroupsScreen(
-    modifier: Modifier = Modifier,
-    navController: NavHostController
-
-) {
+fun PeopleScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,21 +58,18 @@ fun GroupsScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(6) { person ->
-                Group(
-                    users = arrayListOf("Kullanıcı","Kullanıcı","Kullanıcı","Kullanıcı","Kullanıcı"),
-                    onClick = {
-                        navController.navigate(MainNavTarget.GroupContentScreen.route)
-                    }
-                )
+                PeopleItem(){
+                    navController.navigate(MainNavTarget.ProfileScreen.route)
+                }
             }
         }
     }
+
 }
 
 @Composable
-fun Group(
-    users: ArrayList<String>,
-    onClick: () -> Unit
+fun PeopleItem(
+    onClick: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -92,38 +80,25 @@ fun Group(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .clip(RoundedCornerShape(12.dp)) // Shadow'u kesmeden içeriyi kliple
-                .background(Color.White) // Arka plan belirlemek gölgeyi daha net gösterir
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White)
                 .padding(8.dp)
         ) {
-            Box {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
                 Image(
-                    painter = painterResource(id = R.drawable.worker_image),
+                    imageVector = Icons.Filled.AccountCircle,
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .height(64.dp)
-                        .fillMaxWidth()
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .size(54.dp)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Image(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .padding(top = 32.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .size(54.dp)
-                    )
-                }
             }
-
             Text(
-                text = "Group Name",
+                text = "Ata Berk Aksoy",
                 style = TextStyle(
                     fontFamily = FontFamily(Font(R.font.roboto_medium))
                 )
@@ -137,32 +112,60 @@ fun Group(
                 color = Color.Gray,
                 modifier = Modifier.padding(top = 4.dp)
             )
+
             Row {
-                users.forEach {
-                    Image(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .padding(top = 8.dp, start = 2.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .size(24.dp)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "10",
+                        style = TextStyle(
+                            fontFamily = FontFamily(Font(R.font.roboto_medium)),
+                            fontSize = 16.sp
+                        ),
+                        color = Color.Black,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Text(
+                        text = "Arkadaş",
+                        style = TextStyle(
+                            fontFamily = FontFamily(Font(R.font.roboto_medium)),
+                            fontSize = 10.sp
+                        ),
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(start = 12.dp)
+                ) {
+                    Text(
+                        text = "2",
+                        style = TextStyle(
+                            fontFamily = FontFamily(Font(R.font.roboto_medium)),
+                            fontSize = 16.sp
+                        ),
+                        color = Color.Black,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Text(
+                        text = "Grup",
+                        style = TextStyle(
+                            fontFamily = FontFamily(Font(R.font.roboto_medium)),
+                            fontSize = 10.sp
+                        ),
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
-            Text(
-                text = "Public Group / 5 Members",
-                style = TextStyle(
-                    fontFamily = FontFamily(Font(R.font.roboto_medium)),
-                    fontSize = 10.sp
-                ),
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            
+
 
             SecondaryButton(
                 onClick = { onClick.invoke() },
-                text = "View Group",
+                text = "Profile Git",
                 modifier = Modifier
                     .padding(vertical = 2.dp)
                     .fillMaxWidth(0.7f)
@@ -171,9 +174,7 @@ fun Group(
     }
 }
 
-
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun GroupsScreenPreview() {
-    //GroupsScreen(navController = navController)
+private fun PeopleScreenPreview() {
 }

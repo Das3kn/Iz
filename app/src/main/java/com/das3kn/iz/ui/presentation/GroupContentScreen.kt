@@ -2,6 +2,7 @@ package com.das3kn.iz.ui.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,10 +33,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.das3kn.iz.R
 
 @Composable
-fun GroupsContentScreen(modifier: Modifier = Modifier) {
+fun GroupsContentScreen(modifier: Modifier = Modifier, navController: NavHostController) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -57,11 +59,13 @@ fun GroupsContentScreen(modifier: Modifier = Modifier) {
 @Composable
 fun UserOptionsItem(
     text: String,
-    icon: Int
+    icon: Int,
+    onClick: () -> Unit = {}
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
     ) {
         Image(
             imageVector = ImageVector.vectorResource(id = icon),
@@ -144,5 +148,4 @@ fun ProfileCard(modifier: Modifier = Modifier, title: String) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun GroupsContentScreenPreview() {
-    GroupsContentScreen()
 }

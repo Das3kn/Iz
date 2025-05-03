@@ -9,6 +9,7 @@ import com.das3kn.iz.ui.presentation.GroupsContentScreen
 import com.das3kn.iz.ui.presentation.ProfileScreen
 import com.das3kn.iz.ui.presentation.groups.GroupsScreen
 import com.das3kn.iz.ui.presentation.home.HomeScreen
+import com.das3kn.iz.ui.presentation.people.PeopleScreen
 
 @Composable
 fun MainNavigation(modifier: Modifier = Modifier) {
@@ -28,10 +29,19 @@ fun MainNavigation(modifier: Modifier = Modifier) {
             )
         }
         composable(MainNavTarget.ProfileScreen.route){
-            ProfileScreen()
+            ProfileScreen(
+                navController = navController
+            )
         }
         composable(MainNavTarget.GroupContentScreen.route){
-            GroupsContentScreen()
+            GroupsContentScreen(
+                navController = navController
+            )
+        }
+        composable(MainNavTarget.PeopleScreen.route) {
+            PeopleScreen(
+                navController = navController
+            )
         }
     }
 }
@@ -41,5 +51,6 @@ enum class MainNavTarget(val route: String){
     DetailScreen("detail_screen"),
     ProfileScreen("profile_screen"),
     GroupsScreen("groups_screen"),
-    GroupContentScreen("group_content_screen")
+    GroupContentScreen("group_content_screen"),
+    PeopleScreen("people_screen"),
 }
