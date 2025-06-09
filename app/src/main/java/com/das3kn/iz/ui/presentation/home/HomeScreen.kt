@@ -185,6 +185,12 @@ val menuItems = listOf(
         unselectedIcon = Icons.Outlined.Settings,
         route = MainNavTarget.ProfileScreen.route
     ),
+    NavigationItem(
+        title = "Blogs",
+        selectedIcon = Icons.Filled.Settings,
+        unselectedIcon = Icons.Outlined.Settings,
+        route = MainNavTarget.BlogsScreen.route
+    ),
 )
 
 @Preview(showBackground = true, showSystemUi = true)

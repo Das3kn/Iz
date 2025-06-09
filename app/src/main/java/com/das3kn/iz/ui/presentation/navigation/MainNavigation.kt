@@ -7,6 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.das3kn.iz.ui.presentation.GroupsContentScreen
 import com.das3kn.iz.ui.presentation.ProfileScreen
+import com.das3kn.iz.ui.presentation.blogs.BlogContentScreen
+import com.das3kn.iz.ui.presentation.blogs.BlogsScreen
 import com.das3kn.iz.ui.presentation.groups.GroupsScreen
 import com.das3kn.iz.ui.presentation.home.HomeScreen
 import com.das3kn.iz.ui.presentation.people.PeopleScreen
@@ -43,6 +45,16 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 navController = navController
             )
         }
+        composable(MainNavTarget.BlogsScreen.route) {
+            BlogsScreen(
+                navController = navController
+            )
+        }
+        composable(MainNavTarget.BlogContent.route) {
+            BlogContentScreen(
+                navController = navController
+            )
+        }
     }
 }
 
@@ -53,4 +65,6 @@ enum class MainNavTarget(val route: String){
     GroupsScreen("groups_screen"),
     GroupContentScreen("group_content_screen"),
     PeopleScreen("people_screen"),
+    BlogsScreen("blogs_screen"),
+    BlogContent("blog_content")
 }
