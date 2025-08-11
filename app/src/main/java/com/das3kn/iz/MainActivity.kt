@@ -55,6 +55,7 @@ import com.das3kn.iz.ui.presentation.home.HomeScreen
 import com.das3kn.iz.ui.presentation.home.components.ListItem
 import com.das3kn.iz.ui.presentation.navigation.MainNavigation
 import com.das3kn.iz.ui.theme.IzTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 data class NavigationItem(
@@ -65,6 +66,7 @@ data class NavigationItem(
     val badgeCount: Int? = null
 )
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -9,6 +9,8 @@ import com.das3kn.iz.ui.presentation.GroupsContentScreen
 import com.das3kn.iz.ui.presentation.ProfileScreen
 import com.das3kn.iz.ui.presentation.blogs.BlogContentScreen
 import com.das3kn.iz.ui.presentation.blogs.BlogsScreen
+import com.das3kn.iz.ui.presentation.chat.ChatListScreen
+import com.das3kn.iz.ui.presentation.chat.ChatScreen
 import com.das3kn.iz.ui.presentation.groups.GroupsScreen
 import com.das3kn.iz.ui.presentation.home.HomeScreen
 import com.das3kn.iz.ui.presentation.people.PeopleScreen
@@ -55,6 +57,28 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 navController = navController
             )
         }
+        composable(MainNavTarget.ChatListScreen.route) {
+            ChatListScreen(
+                onNavigateToChat = { chatId ->
+                    navController.navigate("${MainNavTarget.ChatScreen.route}/$chatId")
+                },
+                onNavigateToNewChat = {
+                    // TODO: Implement new chat creation
+                }
+            )
+        }
+        composable(
+            route = "${MainNavTarget.ChatScreen.route}/{chatId}",
+            arguments = listOf(
+                androidx.navigation.NavType.StringType
+            )
+        ) { backStackEntry ->
+            val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
+            ChatScreen(
+                chatId = chatId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
@@ -66,5 +90,7 @@ enum class MainNavTarget(val route: String){
     GroupContentScreen("group_content_screen"),
     PeopleScreen("people_screen"),
     BlogsScreen("blogs_screen"),
-    BlogContent("blog_content")
+    BlogContent("blog_content"),
+    ChatListScreen("chat_list_screen"),
+    ChatScreen("chat_screen")
 }
