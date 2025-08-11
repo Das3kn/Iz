@@ -162,7 +162,9 @@ fun HomeScreen(navController: NavHostController) {
                     LazyColumn {
                         items(20){
                             ListItem(
-                                modifier = Modifier.padding(vertical = 8 .dp)
+                                modifier = Modifier.padding(vertical = 8 .dp).clickable{
+                                    navController.navigate(MainNavTarget.ChatListScreen.route)
+                                }
                             )
                         }
                     }

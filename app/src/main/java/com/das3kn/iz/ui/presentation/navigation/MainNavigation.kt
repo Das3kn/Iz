@@ -2,9 +2,11 @@ package com.das3kn.iz.ui.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.das3kn.iz.ui.presentation.GroupsContentScreen
 import com.das3kn.iz.ui.presentation.ProfileScreen
 import com.das3kn.iz.ui.presentation.blogs.BlogContentScreen
@@ -70,7 +72,7 @@ fun MainNavigation(modifier: Modifier = Modifier) {
         composable(
             route = "${MainNavTarget.ChatScreen.route}/{chatId}",
             arguments = listOf(
-                androidx.navigation.NavType.StringType
+                navArgument("chatId") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
