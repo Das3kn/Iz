@@ -1,5 +1,6 @@
 package com.das3kn.iz.data.repository
 
+import android.util.Log
 import com.das3kn.iz.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -33,7 +34,7 @@ class AuthRepository @Inject constructor(
         return try {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val user = result.user!!
-            
+            Log.d("Kayıt",result.toString())
             // Firestore'a kullanıcı bilgilerini kaydet
             val userData = User(
                 id = user.uid,
@@ -41,10 +42,10 @@ class AuthRepository @Inject constructor(
                 email = email,
                 displayName = displayName
             )
-            
+
             firestore.collection("users").document(user.uid).set(userData).await()
             updateFCMToken()
-            
+
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)

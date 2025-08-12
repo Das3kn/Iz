@@ -33,6 +33,7 @@ fun ChatScreen(
 ) {
     val chatState by viewModel.chatState.collectAsState()
     val messages by viewModel.messages.collectAsState()
+    val chatUsers by viewModel.chatUsers.collectAsState()
     val messageText = remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -51,8 +52,10 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val otherUsers = chatUsers.filter { it.id != viewModel.getCurrentUserId() }
                     Text(
-                        text = chatState?.participants?.firstOrNull() ?: "Sohbet",
+                        text = otherUsers.map { it.displayName }.filter { it.isNotEmpty() }.joinToString(", ") 
+                            .ifEmpty { "Sohbet" },
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -85,15 +88,21 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(messages) { message ->
-                MessageItem(message = message)
+                MessageItem(
+                    message = message,
+                    currentUserId = viewModel.getCurrentUserId()
+                )
             }
         }
     }
 }
 
 @Composable
-fun MessageItem(message: Message) {
-    val isOwnMessage = message.senderId == "currentUserId" // TODO: Get from AuthRepository
+fun MessageItem(
+    message: Message,
+    currentUserId: String?
+) {
+    val isOwnMessage = message.senderId == currentUserId
     
     Row(
         modifier = Modifier.fillMaxWidth(),

@@ -14,28 +14,96 @@ class ChatRepository @Inject constructor(
     private val firestore: FirebaseFirestore
 ) {
     
+    init {
+        // Gerekli index'leri oluştur
+        createRequiredIndexes()
+    }
+    
+    private fun createRequiredIndexes() {
+        try {
+            // Chats collection için composite index
+            firestore.collection("chats")
+                .whereArrayContains("participants", "temp")
+                .orderBy("lastMessageTime", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .addOnSuccessListener {
+                    // Index zaten mevcut
+                }
+                .addOnFailureListener { exception ->
+                    if (exception.message?.contains("FAILED_PRECONDITION") == true) {
+                        // Index oluşturulması gerekiyor, kullanıcıya bilgi ver
+                        println("Firestore index oluşturulması gerekiyor. Lütfen Firebase Console'da index oluşturun.")
+                    }
+                }
+        } catch (e: Exception) {
+            println("Index kontrol hatası: ${e.message}")
+        }
+    }
+    
     suspend fun createChat(participants: List<String>): Result<String> {
         return try {
-            val chat = Chat(participants = participants)
+            // Önce mevcut sohbet var mı kontrol et
+            val existingChat = findExistingChat(participants)
+            if (existingChat != null) {
+                // Mevcut sohbet varsa onun ID'sini döndür
+                return Result.success(existingChat.id)
+            }
+            
+            // Yeni sohbet oluştur
+            val chat = Chat(
+                participants = participants,
+                lastMessageTime = System.currentTimeMillis(),
+                unreadCount = participants.associateWith { 0 }
+            )
             val docRef = firestore.collection("chats").add(chat).await()
+            
+            // Oluşturulan sohbeti güncelle (ID'yi set et)
+            firestore.collection("chats").document(docRef.id).update("id", docRef.id).await()
+            
             Result.success(docRef.id)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
+    private suspend fun findExistingChat(participants: List<String>): Chat? {
+        return try {
+            // Mevcut sohbetleri kontrol et
+            val snapshot = firestore.collection("chats")
+                .whereArrayContains("participants", participants.first())
+                .get()
+                .await()
+            
+            snapshot.documents.find { doc ->
+                val chat = doc.toObject(Chat::class.java)
+                chat?.participants?.size == participants.size && 
+                chat.participants.containsAll(participants)
+            }?.toObject(Chat::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     suspend fun getChats(userId: String): Result<List<Chat>> {
         return try {
+            // Geçici olarak index olmadan çalışacak şekilde düzenle
             val snapshot = firestore.collection("chats")
                 .whereArrayContains("participants", userId)
-                .orderBy("lastMessageTime", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                // .orderBy("lastMessageTime", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .get()
                 .await()
             
             val chats = snapshot.documents.mapNotNull { it.toObject(Chat::class.java) }
-            Result.success(chats)
+            // Manuel olarak sırala (index oluşturulana kadar)
+            val sortedChats = chats.sortedByDescending { it.lastMessageTime }
+            Result.success(sortedChats)
         } catch (e: Exception) {
-            Result.failure(e)
+            if (e.message?.contains("FAILED_PRECONDITION") == true) {
+                Result.failure(Exception("Firestore index eksik. Lütfen Firebase Console'da gerekli index'i oluşturun."))
+            } else {
+                Result.failure(e)
+            }
         }
     }
 
@@ -62,12 +130,11 @@ class ChatRepository @Inject constructor(
             firestore.collection("chats").document(chatId).update(
                 mapOf(
                     "lastMessage" to message,
-                    "lastMessageTime" to message.timestamp,
-                    "unreadCount.${message.senderId}" to 0
+                    "lastMessageTime" to message.timestamp
                 )
             ).await()
             
-            // Diğer katılımcıların okunmamış mesaj sayısını artır
+            // Sadece diğer katılımcıların okunmamış mesaj sayısını artır
             val chat = getChatById(chatId).getOrNull()
             chat?.participants?.filter { it != message.senderId }?.forEach { participantId ->
                 firestore.collection("chats").document(chatId)
@@ -132,6 +199,35 @@ class ChatRepository @Inject constructor(
                 .await()
             
             val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
+            Result.success(users)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getUserById(userId: String): Result<User> {
+        return try {
+            val document = firestore.collection("users").document(userId).get().await()
+            val user = document.toObject(User::class.java)
+            if (user != null) {
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Kullanıcı bulunamadı"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getUsersByIds(userIds: List<String>): Result<List<User>> {
+        return try {
+            val users = mutableListOf<User>()
+            for (userId in userIds) {
+                val userResult = getUserById(userId)
+                userResult.onSuccess { user ->
+                    users.add(user)
+                }
+            }
             Result.success(users)
         } catch (e: Exception) {
             Result.failure(e)

@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val authRepository: com.das3kn.iz.data.repository.AuthRepository
 ) : ViewModel() {
 
     private val _chatState = MutableStateFlow<Chat?>(null)
@@ -22,6 +23,9 @@ class ChatViewModel @Inject constructor(
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val messages: StateFlow<List<Message>> = _messages.asStateFlow()
+
+    private val _chatUsers = MutableStateFlow<List<com.das3kn.iz.data.model.User>>(emptyList())
+    val chatUsers: StateFlow<List<com.das3kn.iz.data.model.User>> = _chatUsers.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -36,6 +40,9 @@ class ChatViewModel @Inject constructor(
                 val result = chatRepository.getChatById(chatId)
                 result.onSuccess { chat ->
                     _chatState.value = chat
+                    
+                    // Sohbet katılımcılarının bilgilerini al
+                    loadChatUsers(chat.participants)
                 }.onFailure { exception ->
                     _error.value = exception.message ?: "Sohbet yüklenemedi"
                 }
@@ -47,12 +54,29 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    private suspend fun loadChatUsers(participantIds: List<String>) {
+        try {
+            val usersResult = chatRepository.getUsersByIds(participantIds)
+            usersResult.onSuccess { users ->
+                _chatUsers.value = users
+            }
+        } catch (e: Exception) {
+            println("Kullanıcı bilgileri yüklenemedi: ${e.message}")
+        }
+    }
+
     fun loadMessages(chatId: String) {
         viewModelScope.launch {
             try {
                 val result = chatRepository.getMessages(chatId)
                 result.onSuccess { messageList ->
                     _messages.value = messageList
+                    
+                    // Mesajlar yüklendiğinde unread count'u sıfırla
+                    val currentUser = authRepository.currentUser
+                    if (currentUser != null) {
+                        chatRepository.markMessagesAsRead(chatId, currentUser.uid)
+                    }
                 }.onFailure { exception ->
                     _error.value = exception.message ?: "Mesajlar yüklenemedi"
                 }
@@ -67,18 +91,25 @@ class ChatViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val message = Message(
-                    chatId = chatId,
-                    content = content,
-                    senderId = "currentUserId", // TODO: Get from AuthRepository
-                    senderName = "Kullanıcı" // TODO: Get from AuthRepository
-                )
+                val currentUser = authRepository.currentUser
+                if (currentUser != null) {
+                    val message = Message(
+                        chatId = chatId,
+                        content = content,
+                        senderId = currentUser.uid,
+                        senderName = currentUser.displayName ?: currentUser.email ?: "Kullanıcı"
+                    )
 
-                val result = chatRepository.sendMessage(chatId, message)
-                result.onSuccess { messageId ->
-                    // Mesaj başarıyla gönderildi, UI'da güncelleme yapılabilir
-                }.onFailure { exception ->
-                    _error.value = exception.message ?: "Mesaj gönderilemedi"
+                    val result = chatRepository.sendMessage(chatId, message)
+                    result.onSuccess { messageId ->
+                        // Mesaj başarıyla gönderildi, UI'da güncelleme yapılabilir
+                        // Mesajları yeniden yükle
+                        loadMessages(chatId)
+                    }.onFailure { exception ->
+                        _error.value = exception.message ?: "Mesaj gönderilemedi"
+                    }
+                } else {
+                    _error.value = "Kullanıcı giriş yapmamış"
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Bilinmeyen hata"
@@ -88,5 +119,9 @@ class ChatViewModel @Inject constructor(
 
     fun clearError() {
         _error.value = null
+    }
+
+    fun getCurrentUserId(): String? {
+        return authRepository.currentUser?.uid
     }
 }

@@ -33,11 +33,17 @@ fun ChatListScreen(
     viewModel: ChatListViewModel = hiltViewModel()
 ) {
     val chats by viewModel.chats.collectAsState()
+    val chatUsers by viewModel.chatUsers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadChats()
+    }
+
+    // Ekran focus olduğunda sohbetleri yenile
+    LaunchedEffect(Unit) {
+        viewModel.refreshChats()
     }
 
     Scaffold(
@@ -94,9 +100,12 @@ fun ChatListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(chats) { chat ->
+                    val users = chatUsers[chat.id] ?: emptyList()
                     ChatItem(
                         chat = chat,
-                        onClick = { onNavigateToChat(chat.id) }
+                        users = users,
+                        onClick = { onNavigateToChat(chat.id) },
+                        currentUserId = viewModel.getCurrentUserId()
                     )
                 }
             }
@@ -107,8 +116,13 @@ fun ChatListScreen(
 @Composable
 fun ChatItem(
     chat: Chat,
-    onClick: () -> Unit
+    users: List<com.das3kn.iz.data.model.User>,
+    onClick: () -> Unit,
+    currentUserId: String?
 ) {
+    // Mevcut kullanıcı hariç diğer kullanıcıları al (karşı taraf)
+    val otherUsers = users.filter { it.id != currentUserId }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -130,7 +144,7 @@ fun ChatItem(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = chat.participants.firstOrNull()?.firstOrNull()?.uppercase() ?: "?",
+                    text = otherUsers.firstOrNull()?.displayName?.firstOrNull()?.uppercase() ?: "?",
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
@@ -142,7 +156,7 @@ fun ChatItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = chat.participants.joinToString(", "),
+                    text = otherUsers.map { it.displayName }.filter { it.isNotEmpty() }.joinToString(", "),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     maxLines = 1,
@@ -170,9 +184,10 @@ fun ChatItem(
                 )
             }
 
-            // Okunmamış mesaj sayısı
-            chat.unreadCount.values.firstOrNull { it > 0 }?.let { count ->
-                if (count > 0) {
+            // Okunmamış mesaj sayısı (sadece karşı tarafın mesajları için)
+            if (currentUserId != null) {
+                val unreadCount = chat.unreadCount[currentUserId] ?: 0
+                if (unreadCount > 0) {
                     Spacer(modifier = Modifier.width(8.dp))
                     
                     Box(
@@ -183,7 +198,7 @@ fun ChatItem(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (count > 99) "99+" else count.toString(),
+                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
