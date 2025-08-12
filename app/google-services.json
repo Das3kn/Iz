@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "18057604094",
+    "project_id": "namelessz",
+    "storage_bucket": "namelessz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:18057604094:android:387a5cf746fd1c002daeaf",
+        "android_client_info": {
+          "package_name": "com.das3kn.iz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIv9wCGBrkAyit7ELCIAJG2I3P21oUx2w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
