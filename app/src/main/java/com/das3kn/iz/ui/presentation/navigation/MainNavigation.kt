@@ -17,6 +17,7 @@ import com.das3kn.iz.ui.presentation.chat.NewChatScreen
 import com.das3kn.iz.ui.presentation.groups.GroupsScreen
 import com.das3kn.iz.ui.presentation.home.HomeScreen
 import com.das3kn.iz.ui.presentation.people.PeopleScreen
+import com.das3kn.iz.ui.presentation.posts.CreatePostScreen
 
 @Composable
 fun MainNavigation(modifier: Modifier = Modifier) {
@@ -90,6 +91,12 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 onNavigateBack = { navController.popBackStack() }
             )
         }
+        
+        composable(MainNavTarget.CreatePostScreen.route) {
+            CreatePostScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
@@ -104,5 +111,6 @@ enum class MainNavTarget(val route: String){
     BlogContent("blog_content"),
     ChatListScreen("chat_list_screen"),
     ChatScreen("chat_screen"),
-    NewChatScreen("new_chat_screen")
+    NewChatScreen("new_chat_screen"),
+    CreatePostScreen("create_post_screen")
 }

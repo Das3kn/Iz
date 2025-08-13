@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -23,8 +24,11 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.sharp.AccountBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,13 +63,15 @@ import com.das3kn.iz.ui.presentation.auth.AuthState
 import com.das3kn.iz.ui.presentation.home.components.ListItem
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
 import com.das3kn.iz.ui.theme.components.LoginCard
+import com.das3kn.iz.ui.presentation.home.HomeViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavHostController,
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -80,6 +86,10 @@ fun HomeScreen(
         val authState by authViewModel.authState.collectAsState()
         val currentUser by authViewModel.currentUser.collectAsState()
         val isUserLoggedIn = currentUser != null
+        
+        val homeState by homeViewModel.uiState.collectAsState()
+        
+
 
         // Auth state değişikliklerini dinle
         LaunchedEffect(authState) {
@@ -94,6 +104,12 @@ fun HomeScreen(
                 }
                 else -> {}
             }
+        }
+        
+        // Post yüklendikten sonra otomatik güncelleme
+        LaunchedEffect(Unit) {
+            // HomeScreen her açıldığında post'ları yeniden yükle
+            homeViewModel.loadPosts()
         }
 
         ModalNavigationDrawer(
@@ -206,7 +222,29 @@ fun HomeScreen(
                         },
                         actions = {
                             if (isUserLoggedIn) {
-                                // Giriş yapmış kullanıcı için profil butonu
+                                // Refresh butonu
+                                IconButton(
+                                    onClick = { homeViewModel.refreshPosts() }
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Refresh,
+                                        contentDescription = "Yenile",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                
+                                // Post paylaşma butonu
+                                IconButton(
+                                    onClick = { navController.navigate(MainNavTarget.CreatePostScreen.route) }
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Add,
+                                        contentDescription = "Yeni Gönderi",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                
+                                // Profil butonu
                                 Image(
                                     imageVector = Icons.Filled.AccountCircle,
                                     contentDescription = null,
@@ -237,16 +275,83 @@ fun HomeScreen(
                 Column(modifier = Modifier.padding(it)) {
                     if (isUserLoggedIn) {
                         // Giriş yapmış kullanıcı için ana içerik
-                        LazyColumn {
-                            items(20) { index ->
-                                ListItem(
+                        Box(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            if (homeState.isLoading && homeState.posts.isEmpty()) {
+                                Box(
                                     modifier = Modifier
-                                        .padding(vertical = 8.dp)
-                                        .clickable {
-                                            navController.navigate(MainNavTarget.ChatListScreen.route)
+                                        .fillMaxSize()
+                                        .padding(32.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            } else if (homeState.error != null && homeState.posts.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(32.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Hata: ${homeState.error}",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Button(onClick = { homeViewModel.refreshPosts() }) {
+                                            Text("Tekrar Dene")
                                         }
-                                )
+                                    }
+                                }
+                            } else if (homeState.posts.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(32.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Henüz gönderi yok",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = "İlk gönderiyi sen paylaş!",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            } else {
+                                LazyColumn {
+                                                                    items(homeState.posts) { post ->
+                                    ListItem(
+                                        post = post,
+                                        currentUserId = currentUser?.uid ?: "",
+                                        onLike = { 
+                                            // Like işlemi
+                                            homeViewModel.toggleLike(post.id, currentUser?.uid ?: "")
+                                        },
+                                        modifier = Modifier
+                                            .padding(vertical = 8.dp)
+                                            .clickable {
+                                                // TODO: Post detay sayfasına git
+                                            }
+                                    )
+                                }
+                                }
                             }
+                            
+
                         }
                     } else {
                         // Giriş yapmamış kullanıcı için hoş geldin mesajı

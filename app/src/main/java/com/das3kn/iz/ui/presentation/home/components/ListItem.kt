@@ -30,14 +30,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.das3kn.iz.R
+import com.das3kn.iz.data.model.Post
 
 @Composable
-fun ListItem(modifier: Modifier = Modifier) {
+fun ListItem(
+    post: Post,
+    currentUserId: String,
+    onLike: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val annotatedText = buildAnnotatedString {
-        append("Buğra ")
-        addStyle(SpanStyle(fontWeight = FontWeight.Bold), 0, 5)
-        append("bir gönderi paylaştı.")
+        val username = if (post.username.isNotBlank()) post.username else "Kullanıcı"
+        append(username)
+        addStyle(SpanStyle(fontWeight = FontWeight.Bold), 0, username.length)
+        append(" bir gönderi paylaştı.")
     }
+    
     Column {
         Divider(
             color = Color.LightGray,
@@ -64,7 +72,7 @@ fun ListItem(modifier: Modifier = Modifier) {
                         )
                     )
                     Text(
-                        text = "25 dakika önce",
+                        text = formatTimeAgo(post.createdAt),
                         style = TextStyle(
                             fontFamily = FontFamily(Font(R.font.roboto_medium))
                         ),
@@ -73,29 +81,36 @@ fun ListItem(modifier: Modifier = Modifier) {
                 }
             }
 
-            Text(
-                text = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,",
-                style = TextStyle(
-                    fontFamily = FontFamily(Font(R.font.roboto_medium))
-                ),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            if (post.content.isNotBlank()) {
+                Text(
+                    text = post.content,
+                    style = TextStyle(
+                        fontFamily = FontFamily(Font(R.font.roboto_medium))
+                    ),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
 
-            Image(
-                painter = painterResource(id = R.drawable.worker_image),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.FillWidth
-            )
+            // Media content
+            if (post.mediaUrls.isNotEmpty()) {
+                Image(
+                    painter = painterResource(id = R.drawable.worker_image),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.FillWidth
+                )
+            }
         }
 
         ContentFunctions(
             onComment = { /*TODO*/ },
-            onLike = { /*TODO*/ },
+            onLike = { onLike() },
             onRepost = { /*TODO*/ },
-            onMore = { /*TODO*/}
+            onMore = { /*TODO*/},
+            isLiked = post.likes.contains(currentUserId),
+            likeCount = post.likes.size
         )
 
         Divider(
@@ -103,11 +118,35 @@ fun ListItem(modifier: Modifier = Modifier) {
             thickness = 0.25.dp
         )
     }
+}
 
+private fun formatTimeAgo(timestamp: Long): String {
+    val currentTime = System.currentTimeMillis()
+    val diff = currentTime - timestamp
+    
+    return when {
+        diff < 60000 -> "Az önce"
+        diff < 3600000 -> "${diff / 60000} dakika önce"
+        diff < 86400000 -> "${diff / 3600000} saat önce"
+        diff < 2592000000 -> "${diff / 86400000} gün önce"
+        else -> "${diff / 2592000000} ay önce"
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun ListItemPreview() {
-    ListItem()
+    // Preview için dummy post oluştur
+    val dummyPost = com.das3kn.iz.data.model.Post(
+        id = "1",
+        userId = "user1",
+        username = "TestUser",
+        content = "Bu bir test gönderisidir.",
+        createdAt = System.currentTimeMillis()
+    )
+    ListItem(
+        post = dummyPost,
+        currentUserId = "user1",
+        onLike = { /* Preview */ }
+    )
 }

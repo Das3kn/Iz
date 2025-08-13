@@ -14,10 +14,14 @@ class PostRepository @Inject constructor(
     private val storage: FirebaseStorage
 ) {
     
-    suspend fun createPost(post: Post): Result<String> {
+    suspend fun createPost(post: Post): Result<Post> {
         return try {
             val docRef = firestore.collection("posts").add(post).await()
-            Result.success(docRef.id)
+            // Post'a document ID'yi set et
+            val updatedPost = post.copy(id = docRef.id)
+            // Firestore'da post'u güncelle (ID ile birlikte)
+            firestore.collection("posts").document(docRef.id).set(updatedPost).await()
+            Result.success(updatedPost)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -53,23 +57,29 @@ class PostRepository @Inject constructor(
     }
 
     suspend fun likePost(postId: String, userId: String): Result<Unit> {
+        android.util.Log.d("PostRepository", "likePost: postId=$postId, userId=$userId")
         return try {
             firestore.collection("posts").document(postId)
                 .update("likes", com.google.firebase.firestore.FieldValue.arrayUnion(userId))
                 .await()
+            android.util.Log.d("PostRepository", "likePost: success")
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("PostRepository", "likePost: failed", e)
             Result.failure(e)
         }
     }
 
     suspend fun unlikePost(postId: String, userId: String): Result<Unit> {
+        android.util.Log.d("PostRepository", "unlikePost: postId=$postId, userId=$userId")
         return try {
             firestore.collection("posts").document(postId)
                 .update("likes", com.google.firebase.firestore.FieldValue.arrayRemove(userId))
                 .await()
+            android.util.Log.d("PostRepository", "unlikePost: success")
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("PostRepository", "unlikePost: failed", e)
             Result.failure(e)
         }
     }

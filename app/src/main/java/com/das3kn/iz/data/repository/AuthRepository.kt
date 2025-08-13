@@ -92,4 +92,14 @@ class AuthRepository @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    suspend fun getCurrentUserProfile(): Result<User> {
+        return try {
+            currentUser?.let { user ->
+                getUserProfile(user.uid)
+            } ?: Result.failure(Exception("Kullanıcı giriş yapmamış"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

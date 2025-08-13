@@ -1,11 +1,15 @@
 package com.das3kn.iz.ui.presentation.home.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +24,8 @@ fun ContentFunctions(
     onComment: () -> Unit,
     onRepost: () -> Unit,
     onMore: () -> Unit,
+    isLiked: Boolean = false,
+    likeCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -27,28 +33,62 @@ fun ContentFunctions(
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            imageVector = ImageVector.vectorResource(id = R.drawable.empty_like_icon),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
+        // Like button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onLike() }
+        ) {
+            Image(
+                imageVector = ImageVector.vectorResource(
+                    id = if (isLiked) R.drawable.like_icon else R.drawable.empty_like_icon
+                ),
+                contentDescription = if (isLiked) "Beğeniyi kaldır" else "Beğen",
+                modifier = Modifier.size(24.dp)
+            )
+            if (likeCount > 0) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = likeCount.toString(),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
-        Image(
-            imageVector = ImageVector.vectorResource(id = R.drawable.comment_svgrepo_com),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
+        // Comment button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onComment() }
+        ) {
+            Image(
+                imageVector = ImageVector.vectorResource(id = R.drawable.comment_svgrepo_com),
+                contentDescription = "Yorum yap",
+                modifier = Modifier.size(24.dp)
+            )
+        }
 
-        Image(
-            imageVector = ImageVector.vectorResource(id = R.drawable.repost_svgrepo_com),
-            contentDescription = null,
-            modifier = Modifier.size(28.dp)
-        )
+        // Repost button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onRepost() }
+        ) {
+            Image(
+                imageVector = ImageVector.vectorResource(id = R.drawable.repost_svgrepo_com),
+                contentDescription = "Yeniden paylaş",
+                modifier = Modifier.size(24.dp)
+            )
+        }
 
-        Image(
-            imageVector = ImageVector.vectorResource(id = R.drawable.options_svgrepo_com),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
+        // More options button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onMore() }
+        ) {
+            Image(
+                imageVector = ImageVector.vectorResource(id = R.drawable.options_svgrepo_com),
+                contentDescription = "Daha fazla seçenek",
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
