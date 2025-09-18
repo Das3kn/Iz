@@ -83,6 +83,38 @@ class PostRepository @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    suspend fun togglePostLike(postId: String, userId: String): Result<Unit> {
+        android.util.Log.d("PostRepository", "togglePostLike: postId=$postId, userId=$userId")
+        return try {
+            val postRef = firestore.collection("posts").document(postId)
+            
+            firestore.runTransaction { transaction ->
+                val postDoc = transaction.get(postRef)
+                val post = postDoc.toObject(Post::class.java)
+                
+                if (post != null) {
+                    val currentLikes = post.likes.toMutableList()
+                    
+                    if (currentLikes.contains(userId)) {
+                        currentLikes.remove(userId)
+                        android.util.Log.d("PostRepository", "User $userId unliked post $postId")
+                    } else {
+                        currentLikes.add(userId)
+                        android.util.Log.d("PostRepository", "User $userId liked post $postId")
+                    }
+                    
+                    transaction.update(postRef, "likes", currentLikes)
+                }
+            }.await()
+            
+            android.util.Log.d("PostRepository", "Post like toggle successful")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("PostRepository", "Post like toggle failed", e)
+            Result.failure(e)
+        }
+    }
 
     suspend fun addComment(postId: String, comment: Comment): Result<String> {
         return try {

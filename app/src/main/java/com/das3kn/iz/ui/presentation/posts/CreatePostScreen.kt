@@ -33,6 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.das3kn.iz.R
+import com.das3kn.iz.data.repository.AuthRepository
+import com.das3kn.iz.data.model.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +46,10 @@ fun CreatePostScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     
-
+    // AuthViewModel'i inject et
+    val authViewModel: com.das3kn.iz.ui.presentation.auth.AuthViewModel = hiltViewModel()
+    val userProfile by authViewModel.userProfile.collectAsState()
+    val isLoadingProfile = userProfile == null
 
     LaunchedEffect(uiState.isPostCreated) {
         if (uiState.isPostCreated) {
@@ -107,23 +112,43 @@ fun CreatePostScreen(
                         .background(MaterialTheme.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "U",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isLoadingProfile) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    } else {
+                        Text(
+                            text = userProfile?.displayName?.firstOrNull()?.uppercase()
+                                ?: userProfile?.username?.firstOrNull()?.uppercase()
+                                ?: "U",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.width(12.dp))
                 
                 // Username and privacy
                 Column {
-                    Text(
-                        text = "Kullanıcı Adı",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isLoadingProfile) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Text(
+                            text = userProfile?.displayName
+                                ?: userProfile?.username
+                                ?: "Kullanıcı Adı",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     Text(
                         text = "Herkes görebilir",
                         style = MaterialTheme.typography.bodySmall,

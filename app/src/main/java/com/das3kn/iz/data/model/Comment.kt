@@ -5,9 +5,9 @@ data class Comment(
     val postId: String = "",
     val userId: String = "",
     val username: String = "",
-    val userProfileImage: String = "",
     val content: String = "",
-    val likes: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
-    val replies: List<Comment> = emptyList()
+    val parentId: String? = null, // null ise ana yorum, değilse yanıt
+    val likes: List<String> = emptyList(), // Beğenen kullanıcı ID'leri
+    val replies: List<Comment> = emptyList() // Runtime'da hesaplanacak, Firestore'da saklanmayacak
 )

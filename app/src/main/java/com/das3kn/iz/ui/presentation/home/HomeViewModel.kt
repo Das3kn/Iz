@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.repository.PostRepository
+import com.das3kn.iz.data.repository.SavedPostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val savedPostRepository: SavedPostRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -136,6 +138,75 @@ class HomeViewModel @Inject constructor(
                 )
             } catch (e: Exception) {
                 android.util.Log.e("HomeViewModel", "toggleLike: exception", e)
+                // Hata durumunda UI'ı güncelleme
+                // TODO: Hata mesajı göster
+            }
+        }
+    }
+    
+    // Save/unsave toggle
+    fun toggleSave(postId: String, userId: String) {
+        if (userId.isBlank()) {
+            android.util.Log.d("HomeViewModel", "toggleSave: userId is blank")
+            return
+        }
+        
+        if (postId.isBlank()) {
+            android.util.Log.d("HomeViewModel", "toggleSave: postId is blank, skipping save operation")
+            return
+        }
+        
+        android.util.Log.d("HomeViewModel", "toggleSave: postId=$postId, userId=$userId")
+        
+        viewModelScope.launch {
+            try {
+                // Mevcut post'u bul
+                val currentPost = _uiState.value.posts.find { it.id == postId }
+                if (currentPost == null) {
+                    android.util.Log.d("HomeViewModel", "toggleSave: post not found")
+                    return@launch
+                }
+                
+                android.util.Log.d("HomeViewModel", "toggleSave: current post saves=${currentPost.saves}")
+                
+                // Save durumunu kontrol et
+                val isCurrentlySaved = currentPost.saves.contains(userId)
+                android.util.Log.d("HomeViewModel", "toggleSave: isCurrentlySaved=$isCurrentlySaved")
+                
+                val result = if (isCurrentlySaved) {
+                    android.util.Log.d("HomeViewModel", "toggleSave: calling unsavePost")
+                    savedPostRepository.unsavePost(userId, postId)
+                } else {
+                    android.util.Log.d("HomeViewModel", "toggleSave: calling savePost")
+                    savedPostRepository.savePost(userId, postId)
+                }
+                
+                result.fold(
+                    onSuccess = {
+                        android.util.Log.d("HomeViewModel", "toggleSave: success, updating UI")
+                        // UI'ı güncelle
+                        val updatedPosts = _uiState.value.posts.map { post ->
+                            if (post.id == postId) {
+                                if (isCurrentlySaved) {
+                                    post.copy(saves = post.saves - userId)
+                                } else {
+                                    post.copy(saves = post.saves + userId)
+                                }
+                            } else {
+                                post
+                            }
+                        }
+                        android.util.Log.d("HomeViewModel", "toggleSave: updated posts saves=${updatedPosts.find { it.id == postId }?.saves}")
+                        _uiState.update { it.copy(posts = updatedPosts) }
+                    },
+                    onFailure = { exception ->
+                        android.util.Log.e("HomeViewModel", "toggleSave: failed", exception)
+                        // Hata durumunda UI'ı güncelleme
+                        // TODO: Hata mesajı göster
+                    }
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "toggleSave: exception", e)
                 // Hata durumunda UI'ı güncelleme
                 // TODO: Hata mesajı göster
             }

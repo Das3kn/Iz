@@ -10,7 +10,9 @@ data class Post(
     val mediaType: MediaType = MediaType.TEXT,
     val likes: List<String> = emptyList(),
     val comments: List<Comment> = emptyList(),
+    val commentCount: Int = 0,
     val shares: Int = 0,
+    val saves: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val tags: List<String> = emptyList(),
     val category: String = ""

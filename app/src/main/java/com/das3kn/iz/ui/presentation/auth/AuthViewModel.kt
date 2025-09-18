@@ -3,6 +3,7 @@ package com.das3kn.iz.ui.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das3kn.iz.data.repository.AuthRepository
+import com.das3kn.iz.data.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,9 +22,17 @@ class AuthViewModel @Inject constructor(
     private val _currentUser = MutableStateFlow<com.google.firebase.auth.FirebaseUser?>(null)
     val currentUser: StateFlow<com.google.firebase.auth.FirebaseUser?> = _currentUser.asStateFlow()
 
+    private val _userProfile = MutableStateFlow<User?>(null)
+    val userProfile: StateFlow<User?> = _userProfile.asStateFlow()
+
     init {
         // Mevcut kullanıcıyı kontrol et
         _currentUser.value = authRepository.currentUser
+        
+        // Kullanıcı profilini yükle
+        if (_currentUser.value != null) {
+            loadUserProfile()
+        }
     }
 
     fun signIn(email: String, password: String) {
@@ -34,6 +43,8 @@ class AuthViewModel @Inject constructor(
                 result.onSuccess { user ->
                     _currentUser.value = user
                     _authState.value = AuthState.Success
+                    // Kullanıcı profilini yükle
+                    loadUserProfile()
                 }.onFailure { exception ->
                     _authState.value = AuthState.Error(exception.message ?: "Giriş başarısız")
                 }
@@ -81,4 +92,22 @@ class AuthViewModel @Inject constructor(
     }
 
     fun getCurrentUser() = _currentUser.value
+    
+    fun loadUserProfile() {
+        viewModelScope.launch {
+            try {
+                val result = authRepository.getCurrentUserProfile()
+                result.fold(
+                    onSuccess = { profile ->
+                        _userProfile.value = profile
+                    },
+                    onFailure = { exception ->
+                        android.util.Log.e("AuthViewModel", "Failed to load user profile", exception)
+                    }
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("AuthViewModel", "Exception loading user profile", e)
+            }
+        }
+    }
 }

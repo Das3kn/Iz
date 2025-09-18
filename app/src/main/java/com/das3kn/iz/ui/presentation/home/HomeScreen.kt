@@ -46,15 +46,18 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.das3kn.iz.NavigationItem
@@ -64,6 +67,8 @@ import com.das3kn.iz.ui.presentation.home.components.ListItem
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
 import com.das3kn.iz.ui.theme.components.LoginCard
 import com.das3kn.iz.ui.presentation.home.HomeViewModel
+import com.das3kn.iz.data.repository.AuthRepository
+import com.das3kn.iz.data.model.User
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,7 +94,9 @@ fun HomeScreen(
         
         val homeState by homeViewModel.uiState.collectAsState()
         
-
+        // Kullanıcı profilini AuthViewModel'den al
+        val userProfile by authViewModel.userProfile.collectAsState()
+        val isLoadingProfile = userProfile == null && currentUser != null
 
         // Auth state değişikliklerini dinle
         LaunchedEffect(authState) {
@@ -120,13 +127,28 @@ fun HomeScreen(
                     Box {
                         Column {
                             Surface(
-                                color = Color.DarkGray,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .fillMaxHeight(0.4f)
                                     .fillMaxWidth()
-                            ) {}
+                            ) {
+                                // Header decoration
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Iz",
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                             Surface(
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.surface,
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth()
@@ -138,6 +160,8 @@ fun HomeScreen(
                                 // Kullanıcı giriş yapmışsa profil bilgilerini göster
                                 UserProfileSection(
                                     currentUser = currentUser,
+                                    userProfile = userProfile,
+                                    isLoadingProfile = isLoadingProfile,
                                     onSignOut = {
                                         authViewModel.signOut()
                                         scope.launch {
@@ -341,6 +365,13 @@ fun HomeScreen(
                                             // Like işlemi
                                             homeViewModel.toggleLike(post.id, currentUser?.uid ?: "")
                                         },
+                                        onComment = {
+                                            navController.navigate("${MainNavTarget.PostDetailScreen.route}/${post.id}")
+                                        },
+                                        onSave = {
+                                            // Save işlemi
+                                            homeViewModel.toggleSave(post.id, currentUser?.uid ?: "")
+                                        },
                                         modifier = Modifier
                                             .padding(vertical = 8.dp)
                                             .clickable {
@@ -388,6 +419,8 @@ fun HomeScreen(
 @Composable
 fun UserProfileSection(
     currentUser: com.google.firebase.auth.FirebaseUser?,
+    userProfile: User?,
+    isLoadingProfile: Boolean,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -405,20 +438,39 @@ fun UserProfileSection(
                 ),
             contentAlignment = androidx.compose.ui.Alignment.Center
         ) {
-            Text(
-                text = currentUser?.displayName?.firstOrNull()?.uppercase() ?: "U",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium
-            )
+            if (isLoadingProfile) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(40.dp),
+                    color = Color.White
+                )
+            } else {
+                Text(
+                    text = userProfile?.displayName?.firstOrNull()?.uppercase()
+                        ?: currentUser?.displayName?.firstOrNull()?.uppercase()
+                        ?: "U",
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        Text(
-            text = currentUser?.displayName ?: "Kullanıcı",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-        )
+        if (isLoadingProfile) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else {
+            Text(
+                text = userProfile?.displayName
+                    ?: userProfile?.username
+                    ?: currentUser?.displayName 
+                    ?: "Kullanıcı",
+                style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+        }
         
         Text(
             text = currentUser?.email ?: "",

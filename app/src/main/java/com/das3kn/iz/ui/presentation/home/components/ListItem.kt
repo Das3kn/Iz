@@ -1,16 +1,25 @@
 package com.das3kn.iz.ui.presentation.home.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,86 +46,119 @@ fun ListItem(
     post: Post,
     currentUserId: String,
     onLike: () -> Unit,
+    onComment: () -> Unit = {},
+    onSave: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val annotatedText = buildAnnotatedString {
-        val username = if (post.username.isNotBlank()) post.username else "Kullanıcı"
-        append(username)
-        addStyle(SpanStyle(fontWeight = FontWeight.Bold), 0, username.length)
-        append(" bir gönderi paylaştı.")
-    }
+    val username = if (post.username.isNotBlank()) post.username else "Kullanıcı"
     
-    Column {
-        Divider(
-            color = Color.LightGray,
-            thickness = 0.25.dp,
-        )
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
         Column(
-            modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Row(
-                modifier = Modifier
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
-                Image(
-                    imageVector = Icons.Filled.AccountCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp)
-                )
+                // Profile image with border
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            CircleShape
+                        )
+                        .padding(2.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surface,
+                            CircleShape
+                        )
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
                 Column(
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = annotatedText,
-                        style = TextStyle(
-                            fontFamily = FontFamily(Font(R.font.roboto_medium))
-                        )
+                        text = username,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = formatTimeAgo(post.createdAt),
-                        style = TextStyle(
-                            fontFamily = FontFamily(Font(R.font.roboto_medium))
-                        ),
-                        color = Color.LightGray
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+            
             if (post.content.isNotBlank()) {
                 Text(
                     text = post.content,
-                    style = TextStyle(
-                        fontFamily = FontFamily(Font(R.font.roboto_medium))
-                    ),
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
             }
 
             // Media content
             if (post.mediaUrls.isNotEmpty()) {
-                Image(
-                    painter = painterResource(id = R.drawable.worker_image),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.FillWidth
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.worker_image),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.FillWidth
+                    )
+                }
             }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            ContentFunctions(
+                onComment = { onComment() },
+                onLike = { onLike() },
+                onRepost = { /*TODO*/ },
+                onSave = { onSave() },
+                onMore = { /*TODO*/},
+                isLiked = post.likes.contains(currentUserId),
+                isSaved = post.saves.contains(currentUserId),
+                likeCount = post.likes.size,
+                commentCount = post.commentCount,
+                saveCount = post.saves.size
+            )
         }
-
-        ContentFunctions(
-            onComment = { /*TODO*/ },
-            onLike = { onLike() },
-            onRepost = { /*TODO*/ },
-            onMore = { /*TODO*/},
-            isLiked = post.likes.contains(currentUserId),
-            likeCount = post.likes.size
-        )
-
-        Divider(
-            color = Color.LightGray,
-            thickness = 0.25.dp
-        )
     }
 }
 

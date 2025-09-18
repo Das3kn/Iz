@@ -31,7 +31,9 @@ fun ProfileScreen(modifier: Modifier = Modifier, navController: NavHostControlle
                 UserOptionsItem(text = "Gruplar", icon = R.drawable.group_svgrepo_com){
                     navController.navigate(MainNavTarget.GroupsScreen.route)
                 }
-                UserOptionsItem(text = "Forumlar", icon = R.drawable.comment_forum_svgrepo_com)
+                UserOptionsItem(text = "Kaydedilenler", icon = R.drawable.bookmark_svgrepo_com){
+                    navController.navigate(MainNavTarget.SavedPostsScreen.route)
+                }
                 UserOptionsItem(text = "Medya", icon = R.drawable.media_library_svgrepo_com)
             }
         }

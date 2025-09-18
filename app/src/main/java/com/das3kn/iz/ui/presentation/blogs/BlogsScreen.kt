@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.das3kn.iz.R
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
-import com.das3kn.iz.ui.theme.Purple40
+import com.das3kn.iz.ui.theme.BeehivePrimary
 
 @Composable
 fun BlogsScreen(modifier: Modifier = Modifier, navController: NavHostController) {
@@ -151,7 +151,7 @@ fun Blog(
                         fontFamily = FontFamily(Font(R.font.roboto_medium)),
                         fontSize = 14.sp
                     ),
-                    color = Purple40,
+                    color = BeehivePrimary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
