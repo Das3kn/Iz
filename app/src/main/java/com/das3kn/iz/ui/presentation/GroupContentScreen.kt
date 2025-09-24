@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,11 +33,13 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.das3kn.iz.R
+import com.das3kn.iz.data.model.User
 
 @Composable
 fun GroupsContentScreen(modifier: Modifier = Modifier, navController: NavHostController) {
@@ -85,7 +90,13 @@ fun UserOptionsItem(
 }
 
 @Composable
-fun ProfileCard(modifier: Modifier = Modifier, title: String) {
+fun ProfileCard(
+    modifier: Modifier = Modifier, 
+    title: String,
+    user: User? = null,
+    isLoading: Boolean = false,
+    error: String? = null
+) {
     Box(
         contentAlignment = Alignment.BottomCenter
     ) {
@@ -119,27 +130,65 @@ fun ProfileCard(modifier: Modifier = Modifier, title: String) {
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = title,
-                        style = TextStyle(
-                            fontFamily = FontFamily(Font(R.font.roboto_medium)),
-                            color = Color.Black
-                        ),
-
-                        color = Color.Black
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator()
+                    } else if (error != null) {
+                        Text(
+                            text = "Hata: $error",
+                            color = Color.Red
+                        )
+                    } else {
+                        Text(
+                            text = user?.displayName ?: title,
+                            style = TextStyle(
+                                fontFamily = FontFamily(Font(R.font.roboto_medium)),
+                                color = Color.Black
+                            )
+                        )
+                        
+                        if (user?.username?.isNotEmpty() == true) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "@${user.username}",
+                                style = TextStyle(
+                                    fontFamily = FontFamily(Font(R.font.roboto_medium)),
+                                    color = Color.Gray,
+                                    fontSize = 14.sp
+                                )
+                            )
+                        }
+                    }
                 }
             }
 
-            Image(
-                imageVector = Icons.Filled.AccountCircle,
-                contentDescription = null,
-                modifier = Modifier
-                    .offset(y = (-27).dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .size(100.dp)
-            )
+            if (user != null && !isLoading && error == null) {
+                // Kullanıcı profil resmi
+                Box(
+                    modifier = Modifier
+                        .offset(y = (-27).dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .size(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = user.displayName.firstOrNull()?.uppercase() ?: "?",
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                Image(
+                    imageVector = Icons.Filled.AccountCircle,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .offset(y = (-27).dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .size(100.dp)
+                )
+            }
         }
     }
 }

@@ -158,4 +158,19 @@ class PostRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun getPostsByUser(userId: String): Result<List<Post>> {
+        return try {
+            val snapshot = firestore.collection("posts")
+                .whereEqualTo("authorId", userId)
+                .get()
+                .await()
+            
+            val posts = snapshot.documents.mapNotNull { it.toObject(Post::class.java) }
+                .sortedByDescending { it.createdAt }
+            Result.success(posts)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

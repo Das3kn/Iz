@@ -43,6 +43,18 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 navController = navController
             )
         }
+        composable(
+            route = "${MainNavTarget.ProfileScreen.route}/{userId}",
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            ProfileScreen(
+                navController = navController,
+                userId = userId
+            )
+        }
         composable(MainNavTarget.GroupContentScreen.route){
             GroupsContentScreen(
                 navController = navController
@@ -90,7 +102,10 @@ fun MainNavigation(modifier: Modifier = Modifier) {
             val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
             ChatScreen(
                 chatId = chatId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToProfile = { userId ->
+                    navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
+                }
             )
         }
         
@@ -118,6 +133,7 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 navController = navController
             )
         }
+        
     }
 }
 

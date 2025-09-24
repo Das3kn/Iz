@@ -1,6 +1,7 @@
 package com.das3kn.iz.ui.presentation.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +30,7 @@ import java.util.*
 fun ChatScreen(
     chatId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToProfile: (String) -> Unit = {},
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val chatState by viewModel.chatState.collectAsState()
@@ -53,10 +55,16 @@ fun ChatScreen(
             TopAppBar(
                 title = {
                     val otherUsers = chatUsers.filter { it.id != viewModel.getCurrentUserId() }
+                    val otherUser = otherUsers.firstOrNull()
                     Text(
                         text = otherUsers.map { it.displayName }.filter { it.isNotEmpty() }.joinToString(", ") 
                             .ifEmpty { "Sohbet" },
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable {
+                            otherUser?.let { user ->
+                                onNavigateToProfile(user.id)
+                            }
+                        }
                     )
                 },
                 navigationIcon = {
