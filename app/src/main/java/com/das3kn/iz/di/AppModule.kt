@@ -14,6 +14,7 @@ import com.das3kn.iz.data.repository.ChatRepository
 import com.das3kn.iz.data.repository.CommentRepository
 import com.das3kn.iz.data.repository.PostRepository
 import com.das3kn.iz.data.repository.SavedPostRepository
+import com.das3kn.iz.data.supabase.SupabaseStorageService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -52,8 +53,9 @@ object AppModule {
     @Singleton
     fun providePostRepository(
         firestore: FirebaseFirestore,
-        storage: FirebaseStorage
-    ): PostRepository = PostRepository(firestore, storage)
+        storage: FirebaseStorage,
+        supabaseStorageService: SupabaseStorageService
+    ): PostRepository = PostRepository(firestore, storage, supabaseStorageService)
 
     @Provides
     @Singleton

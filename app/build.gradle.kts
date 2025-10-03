@@ -80,6 +80,19 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
+    
+    // Media picker dependencies
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.activity:activity-ktx:1.8.2")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
+    
+    // Supabase dependencies
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.3.0")
+    implementation("io.github.jan-tennert.supabase:storage-kt:2.3.0")
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.3.0")
+    implementation("io.ktor:ktor-client-android:2.3.7")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

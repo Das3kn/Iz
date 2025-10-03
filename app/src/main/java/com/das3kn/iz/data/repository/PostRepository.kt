@@ -2,16 +2,19 @@ package com.das3kn.iz.data.repository
 
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.model.Comment
+import com.das3kn.iz.data.supabase.SupabaseStorageService
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.content.Context
 
 @Singleton
 class PostRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val storage: FirebaseStorage
+    private val storage: FirebaseStorage,
+    private val supabaseStorageService: SupabaseStorageService
 ) {
     
     suspend fun createPost(post: Post): Result<Post> {
@@ -27,6 +30,15 @@ class PostRepository @Inject constructor(
         }
     }
 
+    suspend fun updatePost(post: Post): Result<Post> {
+        return try {
+            firestore.collection("posts").document(post.id).set(post).await()
+            Result.success(post)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getPosts(limit: Int = 20): Result<List<Post>> {
         return try {
             val snapshot = firestore.collection("posts")
@@ -36,6 +48,10 @@ class PostRepository @Inject constructor(
                 .await()
             
             val posts = snapshot.documents.mapNotNull { it.toObject(Post::class.java) }
+            android.util.Log.d("PostRepository", "Retrieved ${posts.size} posts")
+            posts.forEach { post ->
+                android.util.Log.d("PostRepository", "Post ${post.id} has ${post.mediaUrls.size} media URLs: ${post.mediaUrls}")
+            }
             Result.success(posts)
         } catch (e: Exception) {
             Result.failure(e)
@@ -139,6 +155,26 @@ class PostRepository @Inject constructor(
             val uploadTask = storageRef.putFile(android.net.Uri.fromFile(file))
             val downloadUrl = uploadTask.await().storage.downloadUrl.await()
             Result.success(downloadUrl.toString())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun uploadMediaFromUri(uri: android.net.Uri, fileName: String): Result<String> {
+        return try {
+            val storageRef = storage.reference.child("media/$fileName")
+            val uploadTask = storageRef.putFile(uri)
+            val downloadUrl = uploadTask.await().storage.downloadUrl.await()
+            Result.success(downloadUrl.toString())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun uploadMultipleMedia(mediaUris: List<android.net.Uri>, postId: String, context: Context): Result<List<String>> {
+        return try {
+            val result = supabaseStorageService.uploadMultipleMedia(context, mediaUris, postId)
+            result
         } catch (e: Exception) {
             Result.failure(e)
         }

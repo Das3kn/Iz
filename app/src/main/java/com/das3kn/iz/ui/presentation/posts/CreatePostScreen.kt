@@ -31,10 +31,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.das3kn.iz.R
 import com.das3kn.iz.data.repository.AuthRepository
 import com.das3kn.iz.data.model.User
+import com.das3kn.iz.utils.MediaPicker
+import com.das3kn.iz.utils.rememberMediaPickerLauncher
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +58,43 @@ fun CreatePostScreen(
     val authViewModel: com.das3kn.iz.ui.presentation.auth.AuthViewModel = hiltViewModel()
     val userProfile by authViewModel.userProfile.collectAsState()
     val isLoadingProfile = userProfile == null
+
+    // Media picker launcher
+    val mediaPicker = rememberMediaPickerLauncher(
+        onImageSelected = { uri -> 
+            android.util.Log.d("CreatePostScreen", "Gallery image selected - uri: $uri")
+            viewModel.addMediaUri(uri, false) 
+        },
+        onVideoSelected = { uri -> 
+            android.util.Log.d("CreatePostScreen", "Gallery video selected - uri: $uri")
+            viewModel.addMediaUri(uri, true) 
+        },
+        onPermissionDenied = { /* Handle permission denied */ }
+    )
+    
+    // Camera launchers for direct handling
+    var currentCameraFile by remember { mutableStateOf<File?>(null) }
+    var currentVideoFile by remember { mutableStateOf<File?>(null) }
+    
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        android.util.Log.d("CreatePostScreen", "Camera result - success: $success")
+        if (success && currentCameraFile != null) {
+            val uri = MediaPicker.getImageUri(context, currentCameraFile!!)
+            android.util.Log.d("CreatePostScreen", "Adding camera image - uri: $uri")
+            viewModel.addMediaUri(uri, false)
+        }
+    }
+    
+    val videoCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CaptureVideo()
+    ) { success ->
+        if (success && currentVideoFile != null) {
+            val uri = MediaPicker.getVideoUri(context, currentVideoFile!!)
+            viewModel.addMediaUri(uri, true)
+        }
+    }
 
     LaunchedEffect(uiState.isPostCreated) {
         if (uiState.isPostCreated) {
@@ -69,8 +114,8 @@ fun CreatePostScreen(
                 },
                 actions = {
                     TextButton(
-                        onClick = { viewModel.createPost() },
-                        enabled = (uiState.content.isNotBlank() || uiState.selectedImages.isNotEmpty()) && !uiState.isLoading
+                        onClick = { viewModel.createPost(context) },
+                        enabled = (uiState.content.isNotBlank() || uiState.selectedImages.isNotEmpty() || uiState.selectedMediaUris.isNotEmpty()) && !uiState.isLoading
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
@@ -81,7 +126,7 @@ fun CreatePostScreen(
                         } else {
                             Text(
                                 "Paylaş",
-                                color = if (uiState.content.isNotBlank() || uiState.selectedImages.isNotEmpty()) 
+                                color = if (uiState.content.isNotBlank() || uiState.selectedImages.isNotEmpty() || uiState.selectedMediaUris.isNotEmpty()) 
                                     MaterialTheme.colorScheme.primary 
                                 else 
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -201,7 +246,72 @@ fun CreatePostScreen(
                 }
             }
 
-            // Selected images
+            // Selected media files
+            if (uiState.selectedMediaUris.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(uiState.selectedMediaUris.size) { index ->
+                        val mediaItem = uiState.selectedMediaUris[index]
+                        Box {
+                            if (mediaItem.isVideo) {
+                                // Video preview
+                                Box(
+                                    modifier = Modifier
+                                        .size(120.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.Black.copy(alpha = 0.7f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = mediaItem.uri,
+                                        contentDescription = "Video",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Icon(
+                                        Icons.Default.PlayArrow,
+                                        contentDescription = "Video",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            } else {
+                                // Image preview
+                                AsyncImage(
+                                    model = mediaItem.uri,
+                                    contentDescription = "Image",
+                                    modifier = Modifier
+                                        .size(120.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            
+                            // Remove button
+                            IconButton(
+                                onClick = { viewModel.removeMediaUri(index) },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(24.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Kaldır",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Selected images (legacy support)
             if (uiState.selectedImages.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier
@@ -243,39 +353,119 @@ fun CreatePostScreen(
                 }
             }
 
-            // Add media button
-            Row(
+            // Add media buttons
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .padding(16.dp)
             ) {
-                // Add photo button
-                OutlinedButton(
-                    onClick = { viewModel.addImage(R.drawable.worker_image) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
+                Text(
+                    text = "Medya Ekle",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Add, "Fotoğraf Ekle")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Fotoğraf")
+                    // Gallery photo button
+                    OutlinedButton(
+                        onClick = { 
+                            if (MediaPicker.hasStoragePermission(context)) {
+                                mediaPicker.pickImage()
+                            } else {
+                                mediaPicker.requestPermissions()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(Icons.Default.Add, "Galeriden Fotoğraf Seç")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Fotoğraf", fontSize = 12.sp)
+                    }
+                    
+                    // Camera photo button
+                    OutlinedButton(
+                        onClick = { 
+                            if (MediaPicker.hasCameraPermission(context)) {
+                                val file = MediaPicker.createImageFile(context)
+                                currentCameraFile = file
+                                val uri = MediaPicker.getImageUri(context, file)
+                                cameraLauncher.launch(uri)
+                            } else {
+                                mediaPicker.requestPermissions()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.camera), 
+                            contentDescription = "Kamera ile Fotoğraf Çek",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Kamera", fontSize = 12.sp)
+                    }
                 }
                 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 
-                // Add video button
-                OutlinedButton(
-                    onClick = { /* TODO: Video ekleme */ },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.PlayArrow, "Video Ekle")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Video")
+                    // Gallery video button
+                    OutlinedButton(
+                        onClick = { 
+                            if (MediaPicker.hasStoragePermission(context)) {
+                                mediaPicker.pickVideo()
+                            } else {
+                                mediaPicker.requestPermissions()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(Icons.Default.PlayArrow, "Galeriden Video Seç")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Video", fontSize = 12.sp)
+                    }
+                    
+                    // Camera video button
+                    OutlinedButton(
+                        onClick = { 
+                            if (MediaPicker.hasCameraPermission(context)) {
+                                val file = MediaPicker.createVideoFile(context)
+                                currentVideoFile = file
+                                val uri = MediaPicker.getVideoUri(context, file)
+                                videoCameraLauncher.launch(uri)
+                            } else {
+                                mediaPicker.requestPermissions()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.video), 
+                            contentDescription = "Kamera ile Video Çek",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Video Çek", fontSize = 12.sp)
+                    }
                 }
             }
 
