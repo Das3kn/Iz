@@ -80,7 +80,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
-    
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+
     // Media picker dependencies
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.activity:activity-ktx:1.8.2")
