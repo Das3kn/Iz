@@ -177,6 +177,13 @@ fun SavedPostsScreen(
                                     onSave = { targetPost ->
                                         viewModel.toggleSave(targetPost.id, currentUser?.uid ?: "")
                                     },
+                                    onProfileClick = { userId ->
+                                        if (userId == currentUser?.uid) {
+                                            navController.navigate(MainNavTarget.ProfileScreen.route)
+                                        } else {
+                                            navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
+                                        }
+                                    },
                                     modifier = Modifier.padding(vertical = 8.dp)
                                 )
                             }
@@ -196,6 +203,7 @@ fun SavedPostItem(
     onComment: (Post) -> Unit,
     onSave: (Post) -> Unit,
     onRepost: (Post) -> Unit = {},
+    onProfileClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     ListItem(
@@ -205,6 +213,7 @@ fun SavedPostItem(
         onComment = onComment,
         onSave = onSave,
         onRepost = onRepost,
+        onProfileClick = onProfileClick,
         modifier = modifier
     )
 }

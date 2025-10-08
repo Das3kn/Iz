@@ -9,6 +9,9 @@ data class User(
     val bio: String = "",
     val followers: List<String> = emptyList(),
     val following: List<String> = emptyList(),
+    val friends: List<String> = emptyList(),
+    val incomingFriendRequests: List<String> = emptyList(),
+    val outgoingFriendRequests: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val fcmToken: String = ""
 )

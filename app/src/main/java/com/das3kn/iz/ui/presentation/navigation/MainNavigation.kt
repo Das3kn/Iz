@@ -20,6 +20,7 @@ import com.das3kn.iz.ui.presentation.people.PeopleScreen
 import com.das3kn.iz.ui.presentation.posts.CreatePostScreen
 import com.das3kn.iz.ui.presentation.posts.PostDetailScreen
 import com.das3kn.iz.ui.presentation.saved.SavedPostsScreen
+import com.das3kn.iz.ui.presentation.notifications.NotificationsScreen
 
 @Composable
 fun MainNavigation(modifier: Modifier = Modifier) {
@@ -57,6 +58,11 @@ fun MainNavigation(modifier: Modifier = Modifier) {
         }
         composable(MainNavTarget.GroupContentScreen.route){
             GroupsContentScreen(
+                navController = navController
+            )
+        }
+        composable(MainNavTarget.NotificationsScreen.route) {
+            NotificationsScreen(
                 navController = navController
             )
         }
@@ -151,5 +157,6 @@ enum class MainNavTarget(val route: String){
     NewChatScreen("new_chat_screen"),
     CreatePostScreen("create_post_screen"),
     PostDetailScreen("post_detail_screen"),
-    SavedPostsScreen("saved_posts_screen")
+    SavedPostsScreen("saved_posts_screen"),
+    NotificationsScreen("notifications_screen")
 }
