@@ -1,5 +1,7 @@
 package com.das3kn.iz.data.model
 
+import com.google.firebase.firestore.Exclude
+
 data class Post(
     val id: String = "",
     val userId: String = "",
@@ -15,7 +17,14 @@ data class Post(
     val saves: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val tags: List<String> = emptyList(),
-    val category: String = ""
+    val category: String = "",
+    val repostOfPostId: String? = null,
+    val repostedByUserId: String? = null,
+    val repostedByUsername: String? = null,
+    val repostedByDisplayName: String? = null,
+    val repostedByProfileImage: String? = null,
+    val repostedAt: Long? = null,
+    @get:Exclude val originalPost: Post? = null
 )
 
 enum class MediaType {

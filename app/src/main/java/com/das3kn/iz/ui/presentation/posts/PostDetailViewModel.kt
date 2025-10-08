@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das3kn.iz.data.model.Comment
 import com.das3kn.iz.data.model.Post
+import com.das3kn.iz.data.model.User
 import com.das3kn.iz.data.repository.CommentRepository
 import com.das3kn.iz.data.repository.PostRepository
 import com.das3kn.iz.data.repository.SavedPostRepository
@@ -247,6 +248,39 @@ class PostDetailViewModel @Inject constructor(
                 android.util.Log.e("PostDetailViewModel", "Post save toggle exception", e)
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Bilinmeyen hata"
+                )
+            }
+        }
+    }
+
+    fun repostPost(post: Post, currentUserId: String, userProfile: User?) {
+        if (currentUserId.isBlank() || post.id.isBlank()) {
+            android.util.Log.d("PostDetailViewModel", "repostPost: missing data")
+            return
+        }
+
+        val profile = userProfile?.let {
+            if (it.id.isBlank()) it.copy(id = currentUserId) else it
+        } ?: User(id = currentUserId)
+
+        viewModelScope.launch {
+            try {
+                val result = postRepository.createRepost(post, profile)
+                result.fold(
+                    onSuccess = {
+                        loadPost(post.id)
+                    },
+                    onFailure = { exception ->
+                        android.util.Log.e("PostDetailViewModel", "repostPost failed", exception)
+                        _uiState.value = _uiState.value.copy(
+                            error = exception.message ?: "Yeniden paylaşım başarısız"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("PostDetailViewModel", "repostPost exception", e)
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Yeniden paylaşım başarısız"
                 )
             }
         }

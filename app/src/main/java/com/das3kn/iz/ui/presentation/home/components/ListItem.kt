@@ -2,7 +2,6 @@ package com.das3kn.iz.ui.presentation.home.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,15 +26,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.das3kn.iz.R
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.ui.presentation.components.ImagePreviewDialog
 import com.das3kn.iz.ui.presentation.components.PostMediaGallery
@@ -46,116 +42,146 @@ import com.das3kn.iz.ui.presentation.components.VideoPlayerDialog
 fun ListItem(
     post: Post,
     currentUserId: String,
-    onLike: () -> Unit,
-    onComment: () -> Unit = {},
-    onSave: () -> Unit = {},
+    onLike: (Post) -> Unit,
+    onComment: (Post) -> Unit = {},
+    onSave: (Post) -> Unit = {},
+    onRepost: (Post) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val username = if (post.username.isNotBlank()) post.username else "Kullanıcı"
-    
+    val displayPost = post.originalPost ?: post
+    val username = if (displayPost.username.isNotBlank()) displayPost.username else "Kullanıcı"
+    val isRepost = post.repostOfPostId != null
+    val repostDisplayName = post.repostedByDisplayName?.takeIf { it.isNotBlank() }
+        ?: post.repostedByUsername?.takeIf { it.isNotBlank() }
+        ?: post.username.takeIf { it.isNotBlank() }
+        ?: username
+
     var selectedVideoUrl by remember { mutableStateOf<String?>(null) }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        ),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+    Column(modifier = modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 2.dp
+            ),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                // Profile image with border
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            CircleShape
+                if (isRepost) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            imageVector = ImageVector.vectorResource(id = R.drawable.repost_svgrepo_com),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
                         )
-                        .padding(2.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface,
-                            CircleShape
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "$repostDisplayName yeniden paylaştı",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        .padding(2.dp),
-                    contentAlignment = Alignment.Center
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Image(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                CircleShape
+                            )
+                            .padding(2.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface,
+                                CircleShape
+                            )
+                            .padding(2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            imageVector = Icons.Filled.AccountCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = username,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = formatTimeAgo(displayPost.createdAt),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (displayPost.content.isNotBlank()) {
+                    Text(
+                        text = displayPost.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 12.dp)
                     )
                 }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = username,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = formatTimeAgo(post.createdAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                if (displayPost.mediaUrls.isNotEmpty()) {
+                    PostMediaGallery(
+                        mediaUrls = displayPost.mediaUrls,
+                        mediaType = displayPost.mediaType,
+                        onVideoClick = { selectedVideoUrl = it },
+                        onImageClick = { selectedImageUrl = it }
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            if (post.content.isNotBlank()) {
-                Text(
-                    text = post.content,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ContentFunctions(
+                    onComment = { onComment(displayPost) },
+                    onLike = { onLike(displayPost) },
+                    onRepost = { onRepost(displayPost) },
+                    onSave = { onSave(displayPost) },
+                    onMore = { /*TODO*/ },
+                    isLiked = displayPost.likes.contains(currentUserId),
+                    isSaved = displayPost.saves.contains(currentUserId),
+                    likeCount = displayPost.likes.size,
+                    commentCount = displayPost.commentCount,
+                    saveCount = displayPost.saves.size
                 )
             }
-
-            // Media content
-            if (post.mediaUrls.isNotEmpty()) {
-                PostMediaGallery(
-                    mediaUrls = post.mediaUrls,
-                    mediaType = post.mediaType,
-                    onVideoClick = { selectedVideoUrl = it },
-                    onImageClick = { selectedImageUrl = it }
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            ContentFunctions(
-                onComment = { onComment() },
-                onLike = { onLike() },
-                onRepost = { /*TODO*/ },
-                onSave = { onSave() },
-                onMore = { /*TODO*/},
-                isLiked = post.likes.contains(currentUserId),
-                isSaved = post.saves.contains(currentUserId),
-                likeCount = post.likes.size,
-                commentCount = post.commentCount,
-                saveCount = post.saves.size
-            )
         }
     }
+
     selectedVideoUrl?.let { url ->
         VideoPlayerDialog(
             videoUrl = url,
@@ -174,7 +200,7 @@ fun ListItem(
 private fun formatTimeAgo(timestamp: Long): String {
     val currentTime = System.currentTimeMillis()
     val diff = currentTime - timestamp
-    
+
     return when {
         diff < 60000 -> "Az önce"
         diff < 3600000 -> "${diff / 60000} dakika önce"
@@ -187,8 +213,7 @@ private fun formatTimeAgo(timestamp: Long): String {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun ListItemPreview() {
-    // Preview için dummy post oluştur
-    val dummyPost = com.das3kn.iz.data.model.Post(
+    val dummyPost = Post(
         id = "1",
         userId = "user1",
         username = "TestUser",
@@ -198,6 +223,6 @@ private fun ListItemPreview() {
     ListItem(
         post = dummyPost,
         currentUserId = "user1",
-        onLike = { /* Preview */ }
+        onLike = {}
     )
 }

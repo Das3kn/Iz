@@ -22,9 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -105,10 +106,19 @@ fun PostDetailScreen(
                     // Post detayı
                     item {
                         PostDetailCard(
-                            post = post, 
+                            post = post,
                             currentUserId = currentUser?.uid ?: "",
-                            onLike = { viewModel.togglePostLike(post.id, currentUser?.uid ?: "") },
-                            onSave = { viewModel.togglePostSave(post.id, currentUser?.uid ?: "") }
+                            onLike = { targetPost ->
+                                viewModel.togglePostLike(targetPost.id, currentUser?.uid ?: "")
+                            },
+                            onSave = { targetPost ->
+                                viewModel.togglePostSave(targetPost.id, currentUser?.uid ?: "")
+                            },
+                            onRepost = { targetPost ->
+                                currentUser?.let { user ->
+                                    viewModel.repostPost(targetPost, user.uid, userProfile)
+                                }
+                            }
                         )
                     }
                     
@@ -320,106 +330,134 @@ fun PostDetailScreen(
 fun PostDetailCard(
     post: Post,
     currentUserId: String,
-    onLike: () -> Unit,
-    onSave: () -> Unit
+    onLike: (Post) -> Unit,
+    onSave: (Post) -> Unit,
+    onRepost: (Post) -> Unit
 ) {
+    val displayPost = post.originalPost ?: post
+    val isRepost = post.repostOfPostId != null
+    val repostDisplayName = post.repostedByDisplayName?.takeIf { it.isNotBlank() }
+        ?: post.repostedByUsername?.takeIf { it.isNotBlank() }
+        ?: post.username.takeIf { it.isNotBlank() }
+        ?: displayPost.username
+
     var selectedVideoUrl by remember { mutableStateOf<String?>(null) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            CircleShape
+                if (isRepost) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            imageVector = ImageVector.vectorResource(id = R.drawable.repost_svgrepo_com),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
                         )
-                        .padding(2.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface,
-                            CircleShape
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "$repostDisplayName yeniden paylaştı",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        .padding(2.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-                    )
+                    }
                 }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = post.username,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = formatTimeAgo(post.createdAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Content
-            if (post.content.isNotBlank()) {
-                Text(
-                    text = post.content,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-            }
-            
-            // Media content
-            if (post.mediaUrls.isNotEmpty()) {
-                PostMediaGallery(
-                    mediaUrls = post.mediaUrls,
-                    mediaType = post.mediaType,
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    onVideoClick = { selectedVideoUrl = it }
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                CircleShape
+                            )
+                            .padding(2.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface,
+                                CircleShape
+                            )
+                            .padding(2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = if (displayPost.username.isNotBlank()) displayPost.username else "Kullanıcı",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = formatTimeAgo(displayPost.createdAt),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (displayPost.content.isNotBlank()) {
+                    Text(
+                        text = displayPost.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+
+                if (displayPost.mediaUrls.isNotEmpty()) {
+                    PostMediaGallery(
+                        mediaUrls = displayPost.mediaUrls,
+                        mediaType = displayPost.mediaType,
+                        modifier = Modifier.fillMaxWidth(),
+                        onVideoClick = { selectedVideoUrl = it }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ContentFunctions(
+                    onComment = { /* Already in comment section */ },
+                    onLike = { onLike(displayPost) },
+                    onRepost = { onRepost(displayPost) },
+                    onSave = { onSave(displayPost) },
+                    onMore = { /* TODO: More options */ },
+                    isLiked = displayPost.likes.contains(currentUserId),
+                    isSaved = displayPost.saves.contains(currentUserId),
+                    likeCount = displayPost.likes.size,
+                    commentCount = displayPost.commentCount,
+                    saveCount = displayPost.saves.size
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Actions
-            ContentFunctions(
-                onComment = { /* Already in comment section */ },
-                onLike = onLike,
-                onRepost = { /* TODO: Repost functionality */ },
-                onSave = onSave,
-                onMore = { /* TODO: More options */ },
-                isLiked = post.likes.contains(currentUserId),
-                isSaved = post.saves.contains(currentUserId),
-                likeCount = post.likes.size,
-                commentCount = post.commentCount,
-                saveCount = post.saves.size
-            )
         }
     }
 

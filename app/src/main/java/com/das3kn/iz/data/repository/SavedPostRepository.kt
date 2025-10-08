@@ -1,5 +1,6 @@
 package com.das3kn.iz.data.repository
 
+import android.util.Log
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.model.SavedPost
 import com.google.firebase.firestore.FirebaseFirestore
@@ -118,10 +119,40 @@ class SavedPostRepository @Inject constructor(
                     posts.add(post)
                 }
             }
-            
-            Result.success(posts)
+
+            val resolvedPosts = attachOriginalPosts(posts)
+
+            Result.success(resolvedPosts)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private suspend fun attachOriginalPosts(posts: List<Post>): List<Post> {
+        if (posts.isEmpty()) return posts
+
+        val repostIds = posts.mapNotNull { it.repostOfPostId }.distinct().filter { it.isNotBlank() }
+        if (repostIds.isEmpty()) return posts
+
+        val originals = mutableMapOf<String, Post>()
+        for (originalId in repostIds) {
+            try {
+                val document = firestore.collection("posts").document(originalId).get().await()
+                document.toObject(Post::class.java)?.let { original ->
+                    originals[originalId] = original
+                }
+            } catch (e: Exception) {
+                Log.e("SavedPostRepository", "attachOriginalPosts: failed to fetch original $originalId", e)
+            }
+        }
+
+        return posts.map { post ->
+            val original = post.repostOfPostId?.let { originals[it] }
+            if (original != null) {
+                post.copy(originalPost = original)
+            } else {
+                post
+            }
         }
     }
 }
