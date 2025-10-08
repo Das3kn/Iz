@@ -86,7 +86,8 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 searchQuery = query,
-                searchError = null
+                searchError = null,
+                isSearchBarVisible = true
             )
         }
 
@@ -148,8 +149,18 @@ class HomeViewModel @Inject constructor(
                 searchQuery = "",
                 searchResults = emptyList(),
                 isSearchingUsers = false,
-                searchError = null
+                searchError = null,
+                isSearchBarVisible = false
             )
+        }
+    }
+
+    fun toggleSearchBarVisibility() {
+        val shouldShow = !_uiState.value.isSearchBarVisible
+        if (shouldShow) {
+            _uiState.update { it.copy(isSearchBarVisible = true) }
+        } else {
+            clearSearchResults()
         }
     }
     
@@ -246,5 +257,6 @@ data class HomeUiState(
     val searchQuery: String = "",
     val searchResults: List<User> = emptyList(),
     val isSearchingUsers: Boolean = false,
-    val searchError: String? = null
+    val searchError: String? = null,
+    val isSearchBarVisible: Boolean = false
 )

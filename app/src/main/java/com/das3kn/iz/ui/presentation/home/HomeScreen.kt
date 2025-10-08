@@ -1,5 +1,10 @@
 package com.das3kn.iz.ui.presentation.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
@@ -51,21 +57,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.das3kn.iz.NavigationItem
@@ -254,6 +260,15 @@ fun HomeScreen(
                         },
                         actions = {
                             if (isUserLoggedIn) {
+                                IconButton(onClick = { homeViewModel.toggleSearchBarVisibility() }) {
+                                    val isVisible = homeState.isSearchBarVisible
+                                    Icon(
+                                        imageVector = if (isVisible) Icons.Filled.Close else Icons.Filled.Search,
+                                        contentDescription = if (isVisible) "Aramayı kapat" else "Kullanıcı ara",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
                                 IconButton(
                                     onClick = { navController.navigate(MainNavTarget.NotificationsScreen.route) }
                                 ) {
@@ -323,25 +338,33 @@ fun HomeScreen(
                         Column(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            OutlinedTextField(
-                                value = homeState.searchQuery,
-                                onValueChange = { query -> homeViewModel.updateSearchQuery(query) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                placeholder = { Text("Kullanıcı ara") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Filled.Search,
-                                        contentDescription = null
+                            AnimatedVisibility(
+                                visible = homeState.isSearchBarVisible,
+                                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+                            ) {
+                                Column {
+                                    OutlinedTextField(
+                                        value = homeState.searchQuery,
+                                        onValueChange = { query -> homeViewModel.updateSearchQuery(query) },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        placeholder = { Text("Kullanıcı ara") },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Filled.Search,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        singleLine = true
                                     )
-                                },
-                                singleLine = true
-                            )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            }
 
-                            if (homeState.searchQuery.isNotBlank()) {
+                            if (homeState.isSearchBarVisible && homeState.searchQuery.isNotBlank()) {
                                 SearchResultsSection(
                                     modifier = Modifier
                                         .weight(1f, fill = true)
