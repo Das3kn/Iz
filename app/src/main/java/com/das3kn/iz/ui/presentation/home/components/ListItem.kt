@@ -20,6 +20,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,16 +33,20 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.das3kn.iz.R
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.ui.presentation.components.ImagePreviewDialog
+import com.das3kn.iz.ui.presentation.components.PostCommentsBottomSheet
 import com.das3kn.iz.ui.presentation.components.PostMediaGallery
 import com.das3kn.iz.ui.presentation.components.VideoPlayerDialog
+import com.das3kn.iz.ui.presentation.posts.PostDetailViewModel
 
 @Composable
 fun ListItem(
     post: Post,
     currentUserId: String,
+    currentUsername: String = "",
     onLike: (Post) -> Unit,
     onComment: (Post) -> Unit = {},
     onSave: (Post) -> Unit = {},
@@ -58,6 +63,15 @@ fun ListItem(
 
     var selectedVideoUrl by remember { mutableStateOf<String?>(null) }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
+    var isCommentSheetOpen by remember { mutableStateOf(false) }
+
+    val postDetailViewModel: PostDetailViewModel = hiltViewModel()
+
+    LaunchedEffect(isCommentSheetOpen, displayPost.id) {
+        if (isCommentSheetOpen) {
+            postDetailViewModel.loadPost(displayPost.id)
+        }
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Card(
@@ -185,14 +199,43 @@ fun ListItem(
     selectedVideoUrl?.let { url ->
         VideoPlayerDialog(
             videoUrl = url,
-            onDismiss = { selectedVideoUrl = null }
+            likeCount = displayPost.likes.size,
+            commentCount = displayPost.commentCount,
+            repostCount = displayPost.shares,
+            isLiked = displayPost.likes.contains(currentUserId),
+            onLike = { onLike(displayPost) },
+            onComment = { isCommentSheetOpen = true },
+            onRepost = { onRepost(displayPost) },
+            onDismiss = {
+                selectedVideoUrl = null
+                isCommentSheetOpen = false
+            }
         )
     }
 
     selectedImageUrl?.let { url ->
         ImagePreviewDialog(
             imageUrl = url,
-            onDismiss = { selectedImageUrl = null }
+            likeCount = displayPost.likes.size,
+            commentCount = displayPost.commentCount,
+            repostCount = displayPost.shares,
+            isLiked = displayPost.likes.contains(currentUserId),
+            onLike = { onLike(displayPost) },
+            onComment = { isCommentSheetOpen = true },
+            onRepost = { onRepost(displayPost) },
+            onDismiss = {
+                selectedImageUrl = null
+                isCommentSheetOpen = false
+            }
+        )
+    }
+
+    if (isCommentSheetOpen && (selectedImageUrl != null || selectedVideoUrl != null)) {
+        PostCommentsBottomSheet(
+            viewModel = postDetailViewModel,
+            currentUserId = currentUserId,
+            currentUsername = currentUsername,
+            onDismiss = { isCommentSheetOpen = false }
         )
     }
 }
@@ -223,6 +266,7 @@ private fun ListItemPreview() {
     ListItem(
         post = dummyPost,
         currentUserId = "user1",
+        currentUsername = "TestUser",
         onLike = {}
     )
 }

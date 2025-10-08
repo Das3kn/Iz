@@ -464,6 +464,13 @@ fun PostDetailCard(
     selectedVideoUrl?.let { url ->
         VideoPlayerDialog(
             videoUrl = url,
+            likeCount = displayPost.likes.size,
+            commentCount = displayPost.commentCount,
+            repostCount = displayPost.shares,
+            isLiked = displayPost.likes.contains(currentUserId),
+            onLike = { onLike(displayPost) },
+            onComment = { /* Comments already visible */ },
+            onRepost = { onRepost(displayPost) },
             onDismiss = { selectedVideoUrl = null }
         )
     }
