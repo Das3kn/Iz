@@ -33,14 +33,15 @@ fun PostMediaGallery(
     mediaUrls: List<String>,
     mediaType: MediaType,
     modifier: Modifier = Modifier,
-    onVideoClick: (String) -> Unit = {}
+    onVideoClick: (String) -> Unit = {},
+    onImageClick: (String) -> Unit = {}
 ) {
     if (mediaUrls.isEmpty()) return
 
     when (mediaType) {
-        MediaType.IMAGE -> renderImages(mediaUrls, modifier)
+        MediaType.IMAGE -> renderImages(mediaUrls, modifier, onImageClick)
         MediaType.VIDEO -> renderVideos(mediaUrls, modifier, onVideoClick)
-        MediaType.MIXED -> renderMixed(mediaUrls, modifier, onVideoClick)
+        MediaType.MIXED -> renderMixed(mediaUrls, modifier, onVideoClick, onImageClick)
         else -> Unit
     }
 }
@@ -48,21 +49,24 @@ fun PostMediaGallery(
 @Composable
 private fun renderImages(
     mediaUrls: List<String>,
-    modifier: Modifier
+    modifier: Modifier,
+    onImageClick: (String) -> Unit
 ) {
     if (mediaUrls.size == 1) {
+        val imageUrl = mediaUrls.first()
         Card(
             modifier = modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             AsyncImage(
-                model = mediaUrls.first(),
+                model = imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onImageClick(imageUrl) },
                 contentScale = ContentScale.Crop
             )
         }
@@ -81,7 +85,8 @@ private fun renderImages(
                         contentDescription = null,
                         modifier = Modifier
                             .size(120.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onImageClick(imageUrl) },
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -135,7 +140,8 @@ private fun renderVideos(
 private fun renderMixed(
     mediaUrls: List<String>,
     modifier: Modifier,
-    onVideoClick: (String) -> Unit
+    onVideoClick: (String) -> Unit,
+    onImageClick: (String) -> Unit
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -159,7 +165,8 @@ private fun renderMixed(
                         contentDescription = null,
                         modifier = Modifier
                             .size(120.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onImageClick(mediaUrl) },
                         contentScale = ContentScale.Crop
                     )
                 }
