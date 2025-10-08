@@ -25,10 +25,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.StyledPlayerView
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.ui.PlayerView
 
 @Composable
 fun VideoPlayerDialog(
@@ -93,10 +93,10 @@ fun VideoPlayerDialog(
 
                 AndroidView(
                     factory = { ctx ->
-                        StyledPlayerView(ctx).apply {
+                        PlayerView(ctx).apply {
                             player = exoPlayer
-                            setShowBuffering(StyledPlayerView.SHOW_BUFFERING_ALWAYS)
-                            useController = true
+                            setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
+                            setUseController(true)
                         }
                     },
                     modifier = Modifier
