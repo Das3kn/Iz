@@ -35,6 +35,8 @@ import com.das3kn.iz.data.model.Comment
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.ui.presentation.auth.AuthViewModel
 import com.das3kn.iz.ui.presentation.home.components.ContentFunctions
+import com.das3kn.iz.ui.presentation.components.PostMediaGallery
+import com.das3kn.iz.ui.presentation.components.VideoPlayerDialog
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -321,6 +323,8 @@ fun PostDetailCard(
     onLike: () -> Unit,
     onSave: () -> Unit
 ) {
+    var selectedVideoUrl by remember { mutableStateOf<String?>(null) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -393,24 +397,16 @@ fun PostDetailCard(
             
             // Media content
             if (post.mediaUrls.isNotEmpty()) {
-                Card(
+                PostMediaGallery(
+                    mediaUrls = post.mediaUrls,
+                    mediaType = post.mediaType,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.worker_image),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.FillWidth
-                    )
-                }
+                    onVideoClick = { selectedVideoUrl = it }
+                )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Actions
             ContentFunctions(
                 onComment = { /* Already in comment section */ },
@@ -425,6 +421,13 @@ fun PostDetailCard(
                 saveCount = post.saves.size
             )
         }
+    }
+
+    selectedVideoUrl?.let { url ->
+        VideoPlayerDialog(
+            videoUrl = url,
+            onDismiss = { selectedVideoUrl = null }
+        )
     }
 }
 

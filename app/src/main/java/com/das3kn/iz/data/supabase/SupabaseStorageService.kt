@@ -2,13 +2,11 @@ package com.das3kn.iz.data.supabase
 
 import android.content.Context
 import android.net.Uri
+import android.webkit.MimeTypeMap
 import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.days
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -67,8 +65,16 @@ class SupabaseStorageService @Inject constructor(
         postId: String
     ): Result<List<String>> = withContext(Dispatchers.IO) {
         try {
+            val timestamp = System.currentTimeMillis()
             val uploadResults = uris.mapIndexed { index, uri ->
-                val fileName = "media_${System.currentTimeMillis()}_$index"
+                val extension = context.getFileExtension(uri)
+                val fileName = buildString {
+                    append("media_${timestamp}_$index")
+                    if (!extension.isNullOrBlank()) {
+                        append('.')
+                        append(extension)
+                    }
+                }
                 val result = uploadMedia(context, uri, postId, fileName)
                 result.getOrThrow()
             }
@@ -87,5 +93,24 @@ class SupabaseStorageService @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+}
+
+private fun Context.getFileExtension(uri: Uri): String? {
+    val contentResolver = contentResolver
+    val mimeType = contentResolver.getType(uri)
+    if (!mimeType.isNullOrEmpty()) {
+        val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
+        if (!extension.isNullOrEmpty()) {
+            return extension
+        }
+    }
+
+    val path = uri.path ?: return null
+    val lastDotIndex = path.lastIndexOf('.')
+    return if (lastDotIndex != -1 && lastDotIndex < path.length - 1) {
+        path.substring(lastDotIndex + 1)
+    } else {
+        null
     }
 }
