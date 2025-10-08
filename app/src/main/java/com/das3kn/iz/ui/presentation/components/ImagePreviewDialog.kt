@@ -3,7 +3,9 @@ package com.das3kn.iz.ui.presentation.components
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -12,8 +14,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -22,6 +24,13 @@ import coil.compose.AsyncImage
 @Composable
 fun ImagePreviewDialog(
     imageUrl: String,
+    likeCount: Int,
+    commentCount: Int,
+    repostCount: Int,
+    isLiked: Boolean,
+    onLike: () -> Unit,
+    onComment: () -> Unit,
+    onRepost: () -> Unit,
     onDismiss: () -> Unit
 ) {
     BackHandler(onBack = onDismiss)
@@ -30,30 +39,47 @@ fun ImagePreviewDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
         ) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
-
-            IconButton(
-                onClick = onDismiss,
+            Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Kapat",
-                    tint = Color.White
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
                 )
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Kapat",
+                        tint = Color.White
+                    )
+                }
             }
+
+            PreviewActionsRow(
+                modifier = Modifier,
+                isLiked = isLiked,
+                likeCount = likeCount,
+                commentCount = commentCount,
+                repostCount = repostCount,
+                onLike = onLike,
+                onComment = onComment,
+                onRepost = onRepost
+            )
         }
     }
 }

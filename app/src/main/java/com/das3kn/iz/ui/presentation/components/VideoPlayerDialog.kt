@@ -3,7 +3,9 @@ package com.das3kn.iz.ui.presentation.components
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -27,6 +29,13 @@ import androidx.media3.ui.PlayerView
 @Composable
 fun VideoPlayerDialog(
     videoUrl: String,
+    likeCount: Int,
+    commentCount: Int,
+    repostCount: Int,
+    isLiked: Boolean,
+    onLike: () -> Unit,
+    onComment: () -> Unit,
+    onRepost: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -47,35 +56,51 @@ fun VideoPlayerDialog(
             usePlatformDefaultWidth = false
         )
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
         ) {
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        player = exoPlayer
-                        setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-                        setUseController(true)
-                    }
-                },
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-            )
-
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    tint = Color.White,
-                    contentDescription = "Kapat"
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            player = exoPlayer
+                            setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
+                            setUseController(true)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
                 )
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        tint = Color.White,
+                        contentDescription = "Kapat"
+                    )
+                }
             }
+
+            PreviewActionsRow(
+                modifier = Modifier,
+                isLiked = isLiked,
+                likeCount = likeCount,
+                commentCount = commentCount,
+                repostCount = repostCount,
+                onLike = onLike,
+                onComment = onComment,
+                onRepost = onRepost
+            )
         }
     }
 

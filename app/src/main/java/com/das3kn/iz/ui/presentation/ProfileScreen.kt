@@ -149,6 +149,8 @@ fun ProfileScreen(
                         ListItem(
                             post = post,
                             currentUserId = currentUserId ?: "",
+                            currentUsername = if (isOtherUserProfile) "" else userState.user?.username
+                                ?: userState.user?.displayName.orEmpty(),
                             onLike = { /* Like işlemi */ },
                             onComment = { /* Comment işlemi */ },
                             onSave = { /* Save işlemi */ },

@@ -168,6 +168,7 @@ fun SavedPostsScreen(
                                 SavedPostItem(
                                     post = post,
                                     currentUserId = currentUser?.uid ?: "",
+                                    currentUsername = currentUser?.displayName ?: "",
                                     onLike = { targetPost ->
                                         viewModel.toggleLike(targetPost.id, currentUser?.uid ?: "")
                                     },
@@ -192,6 +193,7 @@ fun SavedPostsScreen(
 fun SavedPostItem(
     post: Post,
     currentUserId: String,
+    currentUsername: String = "",
     onLike: (Post) -> Unit,
     onComment: (Post) -> Unit,
     onSave: (Post) -> Unit,
@@ -201,6 +203,7 @@ fun SavedPostItem(
     ListItem(
         post = post,
         currentUserId = currentUserId,
+        currentUsername = currentUsername,
         onLike = onLike,
         onComment = onComment,
         onSave = onSave,

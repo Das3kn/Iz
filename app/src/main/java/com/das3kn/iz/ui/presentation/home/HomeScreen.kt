@@ -93,10 +93,14 @@ fun HomeScreen(
         val isUserLoggedIn = currentUser != null
         
         val homeState by homeViewModel.uiState.collectAsState()
-        
+
         // Kullanıcı profilini AuthViewModel'den al
         val userProfile by authViewModel.userProfile.collectAsState()
         val isLoadingProfile = userProfile == null && currentUser != null
+        val username = userProfile?.username
+            ?: userProfile?.displayName
+            ?: currentUser?.displayName
+            ?: "Kullanıcı"
 
         // Auth state değişikliklerini dinle
         LaunchedEffect(authState) {
@@ -361,6 +365,7 @@ fun HomeScreen(
                                         ListItem(
                                             post = post,
                                             currentUserId = currentUser?.uid ?: "",
+                                            currentUsername = username,
                                             onLike = { targetPost ->
                                                 homeViewModel.toggleLike(targetPost.id, currentUser?.uid ?: "")
                                             },
