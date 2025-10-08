@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.das3kn.iz.data.model.Post
+import com.das3kn.iz.ui.presentation.components.ImagePreviewDialog
 import com.das3kn.iz.ui.presentation.components.PostMediaGallery
 import com.das3kn.iz.ui.presentation.components.VideoPlayerDialog
 
@@ -53,6 +54,7 @@ fun ListItem(
     val username = if (post.username.isNotBlank()) post.username else "Kullanıcı"
     
     var selectedVideoUrl by remember { mutableStateOf<String?>(null) }
+    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
     Card(
         modifier = modifier
@@ -133,7 +135,8 @@ fun ListItem(
                 PostMediaGallery(
                     mediaUrls = post.mediaUrls,
                     mediaType = post.mediaType,
-                    onVideoClick = { selectedVideoUrl = it }
+                    onVideoClick = { selectedVideoUrl = it },
+                    onImageClick = { selectedImageUrl = it }
                 )
             }
             
@@ -157,6 +160,13 @@ fun ListItem(
         VideoPlayerDialog(
             videoUrl = url,
             onDismiss = { selectedVideoUrl = null }
+        )
+    }
+
+    selectedImageUrl?.let { url ->
+        ImagePreviewDialog(
+            imageUrl = url,
+            onDismiss = { selectedImageUrl = null }
         )
     }
 }
