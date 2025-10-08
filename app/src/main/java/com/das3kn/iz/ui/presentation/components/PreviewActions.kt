@@ -1,19 +1,24 @@
 package com.das3kn.iz.ui.presentation.components
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.weight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
@@ -31,11 +36,15 @@ fun PreviewActionsRow(
     onRepost: () -> Unit
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.8f))
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         PreviewAction(
+            modifier = Modifier.weight(1f),
             icon = if (isLiked) R.drawable.like_icon else R.drawable.empty_like_icon,
             contentDescription = if (isLiked) "Beğeniyi kaldır" else "Beğen",
             value = likeCount,
@@ -44,6 +53,7 @@ fun PreviewActionsRow(
         )
 
         PreviewAction(
+            modifier = Modifier.weight(1f),
             icon = R.drawable.comment_svgrepo_com,
             contentDescription = "Yorumlar",
             value = commentCount,
@@ -51,6 +61,7 @@ fun PreviewActionsRow(
         )
 
         PreviewAction(
+            modifier = Modifier.weight(1f),
             icon = R.drawable.repost_svgrepo_com,
             contentDescription = "Yeniden paylaş",
             value = repostCount,
@@ -61,6 +72,7 @@ fun PreviewActionsRow(
 
 @Composable
 private fun PreviewAction(
+    modifier: Modifier = Modifier,
     icon: Int,
     contentDescription: String,
     value: Int,
@@ -68,21 +80,27 @@ private fun PreviewAction(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .clickable { onClick() },
+        modifier = modifier
+            .clickable(onClick = onClick),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
+        Image(
             imageVector = ImageVector.vectorResource(id = icon),
             contentDescription = contentDescription,
             modifier = Modifier.size(20.dp),
-            tint = if (isHighlighted) Color.White else Color.White.copy(alpha = 0.8f)
+            colorFilter = ColorFilter.tint(
+                if (isHighlighted) Color.White else Color.White.copy(alpha = 0.85f)
+            )
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = value.toString(),
-            color = Color.White,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        if (value > 0) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = value.toString(),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.alpha(if (isHighlighted) 1f else 0.9f)
+            )
+        }
     }
 }

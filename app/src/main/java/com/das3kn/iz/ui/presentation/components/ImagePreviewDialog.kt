@@ -71,9 +71,7 @@ fun ImagePreviewDialog(
             }
 
             PreviewActionsRow(
-                modifier = Modifier
-                    .background(Color.Black.copy(alpha = 0.8f))
-                    .padding(vertical = 16.dp, horizontal = 24.dp),
+                modifier = Modifier,
                 isLiked = isLiked,
                 likeCount = likeCount,
                 commentCount = commentCount,
