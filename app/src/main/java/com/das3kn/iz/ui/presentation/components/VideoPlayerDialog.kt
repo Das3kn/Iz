@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -62,7 +61,7 @@ fun VideoPlayerDialog(
                     }
                 },
                 modifier = Modifier
-                    .matchParentSize()
+                    .fillMaxSize()
             )
 
             IconButton(
