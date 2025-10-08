@@ -2,8 +2,10 @@ package com.das3kn.iz.data.repository
 
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.model.Comment
+import com.das3kn.iz.data.model.User
 import com.das3kn.iz.data.supabase.SupabaseStorageService
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -48,11 +50,12 @@ class PostRepository @Inject constructor(
                 .await()
             
             val posts = snapshot.documents.mapNotNull { it.toObject(Post::class.java) }
+            val resolvedPosts = resolveReposts(posts)
             android.util.Log.d("PostRepository", "Retrieved ${posts.size} posts")
             posts.forEach { post ->
                 android.util.Log.d("PostRepository", "Post ${post.id} has ${post.mediaUrls.size} media URLs: ${post.mediaUrls}")
             }
-            Result.success(posts)
+            Result.success(resolvedPosts)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -61,7 +64,7 @@ class PostRepository @Inject constructor(
     suspend fun getPostById(postId: String): Result<Post> {
         return try {
             val document = firestore.collection("posts").document(postId).get().await()
-            val post = document.toObject(Post::class.java)
+            val post = document.toObject(Post::class.java)?.let { resolveReposts(listOf(it)).first() }
             if (post != null) {
                 Result.success(post)
             } else {
@@ -201,10 +204,104 @@ class PostRepository @Inject constructor(
                 .whereEqualTo("authorId", userId)
                 .get()
                 .await()
-            
+
             val posts = snapshot.documents.mapNotNull { it.toObject(Post::class.java) }
+                .let { resolveReposts(it) }
                 .sortedByDescending { it.createdAt }
             Result.success(posts)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private suspend fun resolveReposts(posts: List<Post>): List<Post> {
+        if (posts.isEmpty()) return posts
+
+        val repostIds = posts.mapNotNull { it.repostOfPostId }.distinct().filter { it.isNotBlank() }
+        if (repostIds.isEmpty()) return posts
+
+        val originals = mutableMapOf<String, Post>()
+        for (originalId in repostIds) {
+            try {
+                val document = firestore.collection("posts").document(originalId).get().await()
+                document.toObject(Post::class.java)?.let { original ->
+                    originals[originalId] = original
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("PostRepository", "resolveReposts: failed to fetch original $originalId", e)
+            }
+        }
+
+        return posts.map { post ->
+            val original = post.repostOfPostId?.let { originals[it] }
+            if (original != null) {
+                post.copy(originalPost = original)
+            } else {
+                post
+            }
+        }
+    }
+
+    suspend fun createRepost(originalPost: Post, user: User): Result<Post> {
+        return try {
+            val repostingUserId = user.id
+            if (repostingUserId.isBlank()) {
+                return Result.failure(IllegalArgumentException("Kullanıcı bilgileri eksik"))
+            }
+
+            val existingRepostQuery = firestore.collection("posts")
+                .whereEqualTo("repostOfPostId", originalPost.id)
+                .whereEqualTo("repostedByUserId", repostingUserId)
+                .get()
+                .await()
+
+            if (!existingRepostQuery.isEmpty) {
+                val existing = existingRepostQuery.documents.first().toObject(Post::class.java)
+                if (existing != null) {
+                    return Result.success(existing.copy(originalPost = originalPost))
+                }
+            }
+
+            val displayName = user.displayName.ifBlank {
+                user.username.ifBlank { repostingUserId }
+            }
+
+            val repost = Post(
+                userId = repostingUserId,
+                username = displayName,
+                userProfileImage = user.profileImageUrl,
+                content = "",
+                mediaUrls = emptyList(),
+                mediaType = originalPost.mediaType,
+                likes = emptyList(),
+                comments = emptyList(),
+                commentCount = 0,
+                shares = 0,
+                saves = emptyList(),
+                createdAt = System.currentTimeMillis(),
+                tags = emptyList(),
+                category = originalPost.category,
+                repostOfPostId = originalPost.id,
+                repostedByUserId = repostingUserId,
+                repostedByUsername = user.username,
+                repostedByDisplayName = displayName,
+                repostedByProfileImage = user.profileImageUrl,
+                repostedAt = System.currentTimeMillis()
+            )
+
+            val docRef = firestore.collection("posts").add(repost).await()
+            val savedRepost = repost.copy(id = docRef.id, originalPost = originalPost)
+            firestore.collection("posts").document(docRef.id).set(savedRepost.copy(originalPost = null)).await()
+
+            try {
+                firestore.collection("posts").document(originalPost.id)
+                    .update("shares", FieldValue.increment(1))
+                    .await()
+            } catch (e: Exception) {
+                android.util.Log.e("PostRepository", "createRepost: failed to increment share count", e)
+            }
+
+            Result.success(savedRepost)
         } catch (e: Exception) {
             Result.failure(e)
         }

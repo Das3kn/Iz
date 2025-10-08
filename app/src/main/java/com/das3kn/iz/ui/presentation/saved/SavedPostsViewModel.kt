@@ -65,86 +65,40 @@ class SavedPostsViewModel @Inject constructor(
     // Like/unlike toggle
     fun toggleLike(postId: String, userId: String) {
         if (userId.isBlank() || postId.isBlank()) return
-        
+
         viewModelScope.launch {
             try {
-                val currentPost = _uiState.value.savedPosts.find { it.id == postId }
-                if (currentPost == null) return@launch
-                
-                val isCurrentlyLiked = currentPost.likes.contains(userId)
-                
-                val result = if (isCurrentlyLiked) {
-                    postRepository.unlikePost(postId, userId)
-                } else {
-                    postRepository.likePost(postId, userId)
-                }
-                
+                val result = postRepository.togglePostLike(postId, userId)
                 result.fold(
                     onSuccess = {
-                        val updatedPosts = _uiState.value.savedPosts.map { post ->
-                            if (post.id == postId) {
-                                if (isCurrentlyLiked) {
-                                    post.copy(likes = post.likes - userId)
-                                } else {
-                                    post.copy(likes = post.likes + userId)
-                                }
-                            } else {
-                                post
-                            }
-                        }
-                        _uiState.update { it.copy(savedPosts = updatedPosts) }
+                        loadSavedPosts()
                     },
                     onFailure = { exception ->
-                        // TODO: Hata mesajı göster
+                        _uiState.update { it.copy(error = exception.message ?: "Beğeni işlemi başarısız") }
                     }
                 )
             } catch (e: Exception) {
-                // TODO: Hata mesajı göster
+                _uiState.update { it.copy(error = e.message ?: "Beğeni işlemi başarısız") }
             }
         }
     }
-    
-    // Save/unsave toggle
+
     fun toggleSave(postId: String, userId: String) {
         if (userId.isBlank() || postId.isBlank()) return
-        
+
         viewModelScope.launch {
             try {
-                val currentPost = _uiState.value.savedPosts.find { it.id == postId }
-                if (currentPost == null) return@launch
-                
-                val isCurrentlySaved = currentPost.saves.contains(userId)
-                
-                val result = if (isCurrentlySaved) {
-                    savedPostRepository.unsavePost(userId, postId)
-                } else {
-                    savedPostRepository.savePost(userId, postId)
-                }
-                
+                val result = savedPostRepository.toggleSavePost(userId, postId)
                 result.fold(
                     onSuccess = {
-                        if (isCurrentlySaved) {
-                            // Post kaydı kaldırıldı, listeden çıkar
-                            val updatedPosts = _uiState.value.savedPosts.filter { it.id != postId }
-                            _uiState.update { it.copy(savedPosts = updatedPosts) }
-                        } else {
-                            // Post kaydedildi, UI'ı güncelle
-                            val updatedPosts = _uiState.value.savedPosts.map { post ->
-                                if (post.id == postId) {
-                                    post.copy(saves = post.saves + userId)
-                                } else {
-                                    post
-                                }
-                            }
-                            _uiState.update { it.copy(savedPosts = updatedPosts) }
-                        }
+                        loadSavedPosts()
                     },
                     onFailure = { exception ->
-                        // TODO: Hata mesajı göster
+                        _uiState.update { it.copy(error = exception.message ?: "Kaydetme işlemi başarısız") }
                     }
                 )
             } catch (e: Exception) {
-                // TODO: Hata mesajı göster
+                _uiState.update { it.copy(error = e.message ?: "Kaydetme işlemi başarısız") }
             }
         }
     }

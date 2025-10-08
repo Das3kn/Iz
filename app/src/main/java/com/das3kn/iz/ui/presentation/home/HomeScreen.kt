@@ -357,28 +357,35 @@ fun HomeScreen(
                                 }
                             } else {
                                 LazyColumn {
-                                                                    items(homeState.posts) { post ->
-                                    ListItem(
-                                        post = post,
-                                        currentUserId = currentUser?.uid ?: "",
-                                        onLike = { 
-                                            // Like işlemi
-                                            homeViewModel.toggleLike(post.id, currentUser?.uid ?: "")
-                                        },
-                                        onComment = {
-                                            navController.navigate("${MainNavTarget.PostDetailScreen.route}/${post.id}")
-                                        },
-                                        onSave = {
-                                            // Save işlemi
-                                            homeViewModel.toggleSave(post.id, currentUser?.uid ?: "")
-                                        },
-                                        modifier = Modifier
-                                            .padding(vertical = 8.dp)
-                                            .clickable {
-                                                // TODO: Post detay sayfasına git
-                                            }
-                                    )
-                                }
+                                    items(homeState.posts) { post ->
+                                        ListItem(
+                                            post = post,
+                                            currentUserId = currentUser?.uid ?: "",
+                                            onLike = { targetPost ->
+                                                homeViewModel.toggleLike(targetPost.id, currentUser?.uid ?: "")
+                                            },
+                                            onComment = { targetPost ->
+                                                navController.navigate("${MainNavTarget.PostDetailScreen.route}/${targetPost.id}")
+                                            },
+                                            onSave = { targetPost ->
+                                                homeViewModel.toggleSave(targetPost.id, currentUser?.uid ?: "")
+                                            },
+                                            onRepost = { targetPost ->
+                                                currentUser?.let { user ->
+                                                    homeViewModel.repostPost(
+                                                        targetPost,
+                                                        user.uid,
+                                                        userProfile
+                                                    )
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .padding(vertical = 8.dp)
+                                                .clickable {
+                                                    navController.navigate("${MainNavTarget.PostDetailScreen.route}/${(post.originalPost ?: post).id}")
+                                                }
+                                        )
+                                    }
                                 }
                             }
                             

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.repository.PostRepository
 import com.das3kn.iz.data.repository.SavedPostRepository
+import com.das3kn.iz.data.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,138 +78,85 @@ class HomeViewModel @Inject constructor(
     
     // Like/unlike toggle
     fun toggleLike(postId: String, userId: String) {
-        if (userId.isBlank()) {
-            android.util.Log.d("HomeViewModel", "toggleLike: userId is blank")
+        if (userId.isBlank() || postId.isBlank()) {
+            android.util.Log.d("HomeViewModel", "toggleLike: missing information")
             return
         }
-        
-        if (postId.isBlank()) {
-            android.util.Log.d("HomeViewModel", "toggleLike: postId is blank, skipping like operation")
-            return
-        }
-        
-        android.util.Log.d("HomeViewModel", "toggleLike: postId=$postId, userId=$userId")
-        
+
         viewModelScope.launch {
             try {
-                // Mevcut post'u bul
-                val currentPost = _uiState.value.posts.find { it.id == postId }
-                if (currentPost == null) {
-                    android.util.Log.d("HomeViewModel", "toggleLike: post not found")
-                    return@launch
-                }
-                
-                android.util.Log.d("HomeViewModel", "toggleLike: current post likes=${currentPost.likes}")
-                
-                // Like durumunu kontrol et
-                val isCurrentlyLiked = currentPost.likes.contains(userId)
-                android.util.Log.d("HomeViewModel", "toggleLike: isCurrentlyLiked=$isCurrentlyLiked")
-                
-                val result = if (isCurrentlyLiked) {
-                    android.util.Log.d("HomeViewModel", "toggleLike: calling unlikePost")
-                    postRepository.unlikePost(postId, userId)
-                } else {
-                    android.util.Log.d("HomeViewModel", "toggleLike: calling likePost")
-                    postRepository.likePost(postId, userId)
-                }
-                
+                val result = postRepository.togglePostLike(postId, userId)
                 result.fold(
                     onSuccess = {
-                        android.util.Log.d("HomeViewModel", "toggleLike: success, updating UI")
-                        // UI'ı güncelle
-                        val updatedPosts = _uiState.value.posts.map { post ->
-                            if (post.id == postId) {
-                                if (isCurrentlyLiked) {
-                                    post.copy(likes = post.likes - userId)
-                                } else {
-                                    post.copy(likes = post.likes + userId)
-                                }
-                            } else {
-                                post
-                            }
-                        }
-                        android.util.Log.d("HomeViewModel", "toggleLike: updated posts likes=${updatedPosts.find { it.id == postId }?.likes}")
-                        _uiState.update { it.copy(posts = updatedPosts) }
+                        loadPosts()
                     },
                     onFailure = { exception ->
-                        android.util.Log.e("HomeViewModel", "toggleLike: failed", exception)
-                        // Hata durumunda UI'ı güncelleme
-                        // TODO: Hata mesajı göster
+                        android.util.Log.e("HomeViewModel", "toggleLike failed", exception)
+                        _uiState.update { it.copy(error = exception.message ?: "Beğeni işlemi başarısız") }
                     }
                 )
             } catch (e: Exception) {
-                android.util.Log.e("HomeViewModel", "toggleLike: exception", e)
-                // Hata durumunda UI'ı güncelleme
-                // TODO: Hata mesajı göster
+                android.util.Log.e("HomeViewModel", "toggleLike exception", e)
+                _uiState.update { it.copy(error = e.message ?: "Beğeni işlemi başarısız") }
             }
         }
     }
-    
-    // Save/unsave toggle
+
     fun toggleSave(postId: String, userId: String) {
-        if (userId.isBlank()) {
-            android.util.Log.d("HomeViewModel", "toggleSave: userId is blank")
+        if (userId.isBlank() || postId.isBlank()) {
+            android.util.Log.d("HomeViewModel", "toggleSave: missing information")
             return
         }
-        
-        if (postId.isBlank()) {
-            android.util.Log.d("HomeViewModel", "toggleSave: postId is blank, skipping save operation")
-            return
-        }
-        
-        android.util.Log.d("HomeViewModel", "toggleSave: postId=$postId, userId=$userId")
-        
+
         viewModelScope.launch {
             try {
-                // Mevcut post'u bul
-                val currentPost = _uiState.value.posts.find { it.id == postId }
-                if (currentPost == null) {
-                    android.util.Log.d("HomeViewModel", "toggleSave: post not found")
-                    return@launch
-                }
-                
-                android.util.Log.d("HomeViewModel", "toggleSave: current post saves=${currentPost.saves}")
-                
-                // Save durumunu kontrol et
-                val isCurrentlySaved = currentPost.saves.contains(userId)
-                android.util.Log.d("HomeViewModel", "toggleSave: isCurrentlySaved=$isCurrentlySaved")
-                
-                val result = if (isCurrentlySaved) {
-                    android.util.Log.d("HomeViewModel", "toggleSave: calling unsavePost")
-                    savedPostRepository.unsavePost(userId, postId)
-                } else {
-                    android.util.Log.d("HomeViewModel", "toggleSave: calling savePost")
-                    savedPostRepository.savePost(userId, postId)
-                }
-                
+                val result = savedPostRepository.toggleSavePost(userId, postId)
                 result.fold(
                     onSuccess = {
-                        android.util.Log.d("HomeViewModel", "toggleSave: success, updating UI")
-                        // UI'ı güncelle
-                        val updatedPosts = _uiState.value.posts.map { post ->
-                            if (post.id == postId) {
-                                if (isCurrentlySaved) {
-                                    post.copy(saves = post.saves - userId)
-                                } else {
-                                    post.copy(saves = post.saves + userId)
-                                }
-                            } else {
-                                post
-                            }
-                        }
-                        android.util.Log.d("HomeViewModel", "toggleSave: updated posts saves=${updatedPosts.find { it.id == postId }?.saves}")
-                        _uiState.update { it.copy(posts = updatedPosts) }
+                        loadPosts()
                     },
                     onFailure = { exception ->
-                        android.util.Log.e("HomeViewModel", "toggleSave: failed", exception)
-                        // Hata durumunda UI'ı güncelleme
-                        // TODO: Hata mesajı göster
+                        android.util.Log.e("HomeViewModel", "toggleSave failed", exception)
+                        _uiState.update { it.copy(error = exception.message ?: "Kaydetme işlemi başarısız") }
                     }
                 )
             } catch (e: Exception) {
-                android.util.Log.e("HomeViewModel", "toggleSave: exception", e)
-                // Hata durumunda UI'ı güncelleme
-                // TODO: Hata mesajı göster
+                android.util.Log.e("HomeViewModel", "toggleSave exception", e)
+                _uiState.update { it.copy(error = e.message ?: "Kaydetme işlemi başarısız") }
+            }
+        }
+    }
+
+    fun repostPost(originalPost: Post, currentUserId: String, userProfile: User?) {
+        if (currentUserId.isBlank()) {
+            android.util.Log.d("HomeViewModel", "repostPost: user id is blank")
+            return
+        }
+
+        if (originalPost.id.isBlank()) {
+            android.util.Log.d("HomeViewModel", "repostPost: original post id is blank")
+            return
+        }
+
+        val profile = userProfile?.let {
+            if (it.id.isBlank()) it.copy(id = currentUserId) else it
+        } ?: User(id = currentUserId)
+
+        viewModelScope.launch {
+            try {
+                val result = postRepository.createRepost(originalPost, profile)
+                result.fold(
+                    onSuccess = {
+                        loadPosts()
+                    },
+                    onFailure = { exception ->
+                        android.util.Log.e("HomeViewModel", "repostPost failed", exception)
+                        _uiState.update { it.copy(error = exception.message ?: "Yeniden paylaşım başarısız") }
+                    }
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "repostPost exception", e)
+                _uiState.update { it.copy(error = e.message ?: "Yeniden paylaşım başarısız") }
             }
         }
     }
