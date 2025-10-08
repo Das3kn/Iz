@@ -156,8 +156,7 @@ fun ListItem(
     selectedVideoUrl?.let { url ->
         VideoPlayerDialog(
             videoUrl = url,
-            onDismiss = { selectedVideoUrl = null },
-            title = post.username
+            onDismiss = { selectedVideoUrl = null }
         )
     }
 }
