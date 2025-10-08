@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.repository.PostRepository
 import com.das3kn.iz.data.repository.SavedPostRepository
+import com.das3kn.iz.data.repository.UserRepository
 import com.das3kn.iz.data.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,16 +13,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val postRepository: PostRepository,
-    private val savedPostRepository: SavedPostRepository
+    private val savedPostRepository: SavedPostRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private var searchJob: Job? = null
 
     init {
         loadPosts()
@@ -70,10 +76,92 @@ class HomeViewModel @Inject constructor(
     fun refreshPosts() {
         loadPosts()
     }
-    
+
     // Post yüklendikten sonra otomatik güncelleme için
     fun onPostCreated() {
         loadPosts()
+    }
+
+    fun updateSearchQuery(query: String) {
+        _uiState.update {
+            it.copy(
+                searchQuery = query,
+                searchError = null,
+                isSearchBarVisible = true
+            )
+        }
+
+        searchJob?.cancel()
+
+        if (query.length < 2) {
+            _uiState.update {
+                it.copy(
+                    searchResults = emptyList(),
+                    isSearchingUsers = false
+                )
+            }
+            return
+        }
+
+        searchJob = viewModelScope.launch {
+            delay(300)
+            searchUsers(query)
+        }
+    }
+
+    private suspend fun searchUsers(query: String) {
+        _uiState.update { it.copy(isSearchingUsers = true, searchError = null) }
+        try {
+            val result = userRepository.searchUsers(query)
+            result.fold(
+                onSuccess = { users ->
+                    _uiState.update {
+                        it.copy(
+                            searchResults = users,
+                            isSearchingUsers = false,
+                            searchError = null
+                        )
+                    }
+                },
+                onFailure = { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isSearchingUsers = false,
+                            searchError = exception.message ?: "Kullanıcılar bulunamadı"
+                        )
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            _uiState.update {
+                it.copy(
+                    isSearchingUsers = false,
+                    searchError = e.message ?: "Kullanıcı araması başarısız"
+                )
+            }
+        }
+    }
+
+    fun clearSearchResults() {
+        searchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                searchQuery = "",
+                searchResults = emptyList(),
+                isSearchingUsers = false,
+                searchError = null,
+                isSearchBarVisible = false
+            )
+        }
+    }
+
+    fun toggleSearchBarVisibility() {
+        val shouldShow = !_uiState.value.isSearchBarVisible
+        if (shouldShow) {
+            _uiState.update { it.copy(isSearchBarVisible = true) }
+        } else {
+            clearSearchResults()
+        }
     }
     
     // Like/unlike toggle
@@ -165,5 +253,10 @@ class HomeViewModel @Inject constructor(
 data class HomeUiState(
     val posts: List<Post> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val searchQuery: String = "",
+    val searchResults: List<User> = emptyList(),
+    val isSearchingUsers: Boolean = false,
+    val searchError: String? = null,
+    val isSearchBarVisible: Boolean = false
 )

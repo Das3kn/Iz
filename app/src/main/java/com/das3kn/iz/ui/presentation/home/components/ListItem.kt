@@ -2,6 +2,7 @@ package com.das3kn.iz.ui.presentation.home.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,10 +47,12 @@ fun ListItem(
     onComment: (Post) -> Unit = {},
     onSave: (Post) -> Unit = {},
     onRepost: (Post) -> Unit = {},
+    onProfileClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val displayPost = post.originalPost ?: post
     val username = if (displayPost.username.isNotBlank()) displayPost.username else "Kullanıcı"
+    val userId = displayPost.userId
     val isRepost = post.repostOfPostId != null
     val repostDisplayName = post.repostedByDisplayName?.takeIf { it.isNotBlank() }
         ?: post.repostedByUsername?.takeIf { it.isNotBlank() }
@@ -113,7 +116,8 @@ fun ListItem(
                                 MaterialTheme.colorScheme.surface,
                                 CircleShape
                             )
-                            .padding(2.dp),
+                            .padding(2.dp)
+                            .clickable { if (userId.isNotBlank()) onProfileClick(userId) },
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -134,7 +138,12 @@ fun ListItem(
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold
                             ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.clickable {
+                                if (userId.isNotBlank()) {
+                                    onProfileClick(userId)
+                                }
+                            }
                         )
                         Text(
                             text = formatTimeAgo(displayPost.createdAt),

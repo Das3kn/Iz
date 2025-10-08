@@ -36,6 +36,7 @@ fun ProfileScreen(
     val userState by viewModel.userState.collectAsState()
     val postsState by viewModel.postsState.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
+    val friendshipState by viewModel.friendshipState.collectAsState()
 
     LaunchedEffect(userId) {
         if (userId != null) {
@@ -86,8 +87,20 @@ fun ProfileScreen(
                             isLoading = userState.isLoading,
                             error = userState.error
                         )
-                        
-                        if (!isOtherUserProfile) {
+
+                        if (isOtherUserProfile) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            FriendshipAction(
+                                state = friendshipState,
+                                onAddFriend = {
+                                    userState.user?.id?.let { viewModel.sendFriendRequest(it) }
+                                },
+                                onAcceptRequest = {
+                                    userState.user?.id?.let { viewModel.acceptFriendRequest(it) }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceAround
@@ -152,9 +165,71 @@ fun ProfileScreen(
                             onLike = { /* Like işlemi */ },
                             onComment = { /* Comment işlemi */ },
                             onSave = { /* Save işlemi */ },
+                            onProfileClick = { userId ->
+                                if (userId == currentUserId) {
+                                    navController.navigate(MainNavTarget.ProfileScreen.route)
+                                } else {
+                                    navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
+                                }
+                            },
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FriendshipAction(
+    state: FriendshipState,
+    onAddFriend: () -> Unit,
+    onAcceptRequest: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        when {
+            state.isFriend -> {
+                Button(
+                    onClick = {},
+                    enabled = false
+                ) {
+                    Text(text = "Arkadaşsınız")
+                }
+            }
+
+            state.hasIncomingRequest -> {
+                Text(
+                    text = "Bu kullanıcı sana arkadaşlık isteği gönderdi",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Button(onClick = onAcceptRequest) {
+                    Text(text = "İsteği Kabul Et")
+                }
+            }
+
+            state.isRequestPending -> {
+                Text(
+                    text = "Arkadaşlık isteğin gönderildi",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedButton(
+                    onClick = {},
+                    enabled = false
+                ) {
+                    Text(text = "İstek gönderildi")
+                }
+            }
+
+            else -> {
+                Button(onClick = onAddFriend) {
+                    Text(text = "Arkadaş Ekle")
                 }
             }
         }
