@@ -120,7 +120,12 @@ class GroupsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isCreatingGroup = true, error = null) }
 
-            groupRepository.createGroup(ownerId, trimmedName, description.trim(), invitedFriendIds = invitedFriendIds)
+            groupRepository.createGroup(
+                ownerId = ownerId,
+                name = trimmedName,
+                description = description.trim(),
+                invitedUserIds = invitedFriendIds
+            )
                 .onSuccess {
                     loadGroups()
                 }

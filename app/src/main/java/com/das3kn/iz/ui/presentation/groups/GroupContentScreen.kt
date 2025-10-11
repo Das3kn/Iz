@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -122,17 +122,29 @@ fun GroupContentScreen(
             }
 
             else -> {
+                val group = uiState.group
+                if (group == null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "Grup bulunamadı", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    return@Scaffold
+                }
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
                     GroupHeader(
-                        group = uiState.group,
+                        group = group,
                         isOwner = uiState.isOwner,
                         isMember = uiState.isMember,
                         memberCount = uiState.members.size,
-                        pendingCount = uiState.group.pendingInvites.size,
+                        pendingCount = group.pendingInvites.size,
                         onInviteClick = {
                             selectedInvitees = emptySet()
                             isInviteDialogVisible = true
@@ -257,7 +269,7 @@ private fun GroupHeader(
             if (isMember) {
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(onClick = onInviteClick, enabled = isOwner || isMember) {
-                    Icon(imageVector = Icons.Filled.GroupAdd, contentDescription = null)
+                    Icon(imageVector = Icons.Filled.PersonAdd, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = "Arkadaş Davet Et")
                 }

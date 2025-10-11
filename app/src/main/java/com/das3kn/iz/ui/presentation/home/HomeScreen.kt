@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -378,7 +377,7 @@ fun HomeScreen(
                             if (homeState.isSearchBarVisible && homeState.searchQuery.isNotBlank()) {
                                 SearchResultsSection(
                                     modifier = Modifier
-                                        .weight(1f, fill = true)
+                                        .fillMaxWidth()
                                         .padding(horizontal = 16.dp),
                                     query = homeState.searchQuery,
                                     isLoading = homeState.isSearchingUsers,
@@ -397,8 +396,7 @@ fun HomeScreen(
                             } else {
                                 Box(
                                     modifier = Modifier
-                                        .weight(1f, fill = true)
-                                        .fillMaxWidth()
+                                        .fillMaxSize()
                                 ) {
                                     when {
                                         homeState.isLoading && homeState.posts.isEmpty() -> {
@@ -574,7 +572,7 @@ private fun SearchResultsSection(
     }
 
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxWidth()
     ) {
         Text(
             text = "\"$query\" için sonuçlar",
@@ -668,7 +666,7 @@ private fun UserSearchResultItem(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column {
             Text(
                 text = user.displayName.ifBlank { user.username },
                 style = MaterialTheme.typography.titleMedium,

@@ -2,7 +2,15 @@ package com.das3kn.iz.ui.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -14,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,16 +117,29 @@ fun ProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceAround
                             ) {
-                                UserOptionsItem(text = "Arkadaşlar", icon = R.drawable.person_virtual_reality_svgrepo_com){
+                                UserOptionsItem(
+                                    text = "Arkadaşlar",
+                                    icon = R.drawable.person_virtual_reality_svgrepo_com
+                                ) {
                                     navController.navigate(MainNavTarget.PeopleScreen.route)
                                 }
-                                UserOptionsItem(text = "Gruplar", icon = R.drawable.group_svgrepo_com){
+                                UserOptionsItem(
+                                    text = "Gruplar",
+                                    icon = R.drawable.group_svgrepo_com
+                                ) {
                                     navController.navigate(MainNavTarget.GroupsScreen.route)
                                 }
-                                UserOptionsItem(text = "Kaydedilenler", icon = R.drawable.bookmark_svgrepo_com){
+                                UserOptionsItem(
+                                    text = "Kaydedilenler",
+                                    icon = R.drawable.bookmark_svgrepo_com
+                                ) {
                                     navController.navigate(MainNavTarget.SavedPostsScreen.route)
                                 }
-                                UserOptionsItem(text = "Medya", icon = R.drawable.media_library_svgrepo_com)
+                                UserOptionsItem(
+                                    text = "Medya",
+                                    icon = R.drawable.media_library_svgrepo_com,
+                                    onClick = null
+                                )
                             }
                         }
                     }
@@ -180,6 +202,111 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ProfileCard(
+    title: String,
+    user: User?,
+    isLoading: Boolean,
+    error: String?
+) {
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            val username = user?.username?.takeIf { it.isNotBlank() }
+            if (username != null) {
+                Text(
+                    text = "@$username",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            when {
+                isLoading -> {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator()
+                }
+
+                error != null -> {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+
+                user != null && user.bio.isNotBlank() -> {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = user.bio,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserOptionsItem(
+    text: String,
+    icon: Int,
+    onClick: (() -> Unit)? = {}
+) {
+    val clickableModifier = if (onClick != null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier
+    }
+
+    Column(
+        modifier = clickableModifier
+            .padding(horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = text,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
