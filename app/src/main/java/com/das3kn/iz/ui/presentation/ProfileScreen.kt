@@ -38,6 +38,8 @@ fun ProfileScreen(
     val currentUserId by viewModel.currentUserId.collectAsState()
     val friendshipState by viewModel.friendshipState.collectAsState()
 
+    val isOtherUserProfile = userId != null
+
     LaunchedEffect(userId) {
         if (userId != null) {
             viewModel.loadUser(userId)
@@ -45,7 +47,15 @@ fun ProfileScreen(
         }
     }
 
-    val isOtherUserProfile = userId != null
+    LaunchedEffect(currentUserId, isOtherUserProfile) {
+        if (!isOtherUserProfile) {
+            val id = currentUserId
+            if (!id.isNullOrBlank()) {
+                viewModel.loadUser(id)
+                viewModel.loadUserPosts(id)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -121,8 +131,7 @@ fun ProfileScreen(
                 }
             }
 
-            // Kullanıcının postları (sadece başka kullanıcının profili için)
-            if (isOtherUserProfile) {
+            if (isOtherUserProfile || currentUserId != null) {
                 item {
                     Text(
                         text = "Paylaşımlar",
