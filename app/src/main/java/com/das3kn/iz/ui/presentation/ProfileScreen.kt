@@ -20,8 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Message
-import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -381,7 +381,7 @@ private fun MessageButton(modifier: Modifier = Modifier) {
     ) {
         IconButton(onClick = { /* Mesajlaşma gelecekte eklenecek */ }) {
             Icon(
-                imageVector = Icons.Outlined.Message,
+                imageVector = Icons.Default.Send,
                 contentDescription = "Mesaj Gönder"
             )
         }
@@ -447,7 +447,7 @@ private fun FollowActionButton(
                 modifier = modifier
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.PersonAdd,
+                    imageVector = Icons.Default.Add,
                     contentDescription = null
                 )
                 Spacer(modifier = Modifier.width(8.dp))
