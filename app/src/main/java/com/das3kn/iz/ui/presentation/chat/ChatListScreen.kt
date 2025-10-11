@@ -189,6 +189,7 @@ fun ChatListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatListHeader(
     searchQuery: String,
