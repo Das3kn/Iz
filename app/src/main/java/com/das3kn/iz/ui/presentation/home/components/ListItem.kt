@@ -41,7 +41,7 @@ import com.das3kn.iz.ui.presentation.components.ImagePreviewDialog
 import com.das3kn.iz.ui.presentation.components.PostMediaGallery
 import com.das3kn.iz.ui.presentation.components.VideoPlayerDialog
 import kotlin.math.max
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 
 @Composable
 fun ListItem(
@@ -80,7 +80,7 @@ fun ListItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = ImageVector.vectorResource(id = R.drawable.repost_svgrepo_com),
+                    painter = painterResource(id = R.drawable.repost_svgrepo_com),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
