@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.sharp.AccountBox
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
@@ -50,10 +51,12 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -83,6 +86,8 @@ import com.das3kn.iz.ui.theme.components.LoginCard
 import com.das3kn.iz.ui.presentation.home.HomeViewModel
 import com.das3kn.iz.data.repository.AuthRepository
 import com.das3kn.iz.data.model.User
+import com.das3kn.iz.data.model.Group
+import com.das3kn.iz.data.model.Post
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,10 +112,12 @@ fun HomeScreen(
         val isUserLoggedIn = currentUser != null
         
         val homeState by homeViewModel.uiState.collectAsState()
-        
+
         // Kullanıcı profilini AuthViewModel'den al
         val userProfile by authViewModel.userProfile.collectAsState()
         val isLoadingProfile = userProfile == null && currentUser != null
+
+        var shareTargetPost by remember { mutableStateOf<Post?>(null) }
 
         // Auth state değişikliklerini dinle
         LaunchedEffect(authState) {
@@ -131,6 +138,10 @@ fun HomeScreen(
         LaunchedEffect(Unit) {
             // HomeScreen her açıldığında post'ları yeniden yükle
             homeViewModel.loadPosts()
+        }
+
+        LaunchedEffect(currentUser?.uid) {
+            homeViewModel.refreshUserGroups()
         }
 
         ModalNavigationDrawer(
@@ -467,13 +478,7 @@ fun HomeScreen(
                                                             homeViewModel.toggleSave(targetPost.id, currentUser?.uid ?: "")
                                                         },
                                                         onRepost = { targetPost ->
-                                                            currentUser?.let { user ->
-                                                                homeViewModel.repostPost(
-                                                                    targetPost,
-                                                                    user.uid,
-                                                                    userProfile
-                                                                )
-                                                            }
+                                                            shareTargetPost = targetPost
                                                         },
                                                         onProfileClick = { userId ->
                                                             if (userId == currentUser?.uid) {
@@ -523,6 +528,33 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        shareTargetPost?.let { targetPost ->
+            SharePostDialog(
+                groups = homeState.userGroups,
+                onDismiss = { shareTargetPost = null },
+                onShareToProfile = {
+                    currentUser?.let { user ->
+                        homeViewModel.repostPost(
+                            targetPost,
+                            user.uid,
+                            userProfile
+                        )
+                    }
+                    shareTargetPost = null
+                },
+                onShareToGroup = { groupId ->
+                    currentUser?.let { user ->
+                        val profile = userProfile?.let { existing ->
+                            if (existing.id.isBlank()) existing.copy(id = user.uid) else existing
+                        } ?: User(id = user.uid)
+
+                        homeViewModel.sharePostToGroup(targetPost, profile, groupId)
+                    }
+                    shareTargetPost = null
+                }
+            )
         }
     }
 }
@@ -651,6 +683,58 @@ private fun UserSearchResultItem(
             }
         }
     }
+}
+
+@Composable
+private fun SharePostDialog(
+    groups: List<Group>,
+    onDismiss: () -> Unit,
+    onShareToProfile: () -> Unit,
+    onShareToGroup: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Paylaşım Seçenekleri") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    onClick = onShareToProfile,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Akışında paylaş")
+                }
+
+                Text(
+                    text = "Gruplarında paylaş",
+                    style = MaterialTheme.typography.labelLarge
+                )
+
+                if (groups.isEmpty()) {
+                    Text(
+                        text = "Üyesi olduğun bir grup bulunmuyor.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        groups.forEach { group ->
+                            OutlinedButton(
+                                onClick = { onShareToGroup(group.id) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(text = group.name)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Kapat")
+            }
+        }
+    )
 }
 
 @Composable

@@ -15,6 +15,7 @@ import com.das3kn.iz.data.repository.CommentRepository
 import com.das3kn.iz.data.repository.PostRepository
 import com.das3kn.iz.data.repository.SavedPostRepository
 import com.das3kn.iz.data.repository.UserRepository
+import com.das3kn.iz.data.repository.GroupRepository
 import com.das3kn.iz.data.supabase.SupabaseStorageService
 import dagger.Module
 import dagger.Provides
@@ -81,4 +82,10 @@ object AppModule {
     fun provideUserRepository(
         firestore: FirebaseFirestore
     ): UserRepository = UserRepository(firestore)
+
+    @Provides
+    @Singleton
+    fun provideGroupRepository(
+        firestore: FirebaseFirestore
+    ): GroupRepository = GroupRepository(firestore)
 }

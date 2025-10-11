@@ -12,6 +12,8 @@ data class User(
     val friends: List<String> = emptyList(),
     val incomingFriendRequests: List<String> = emptyList(),
     val outgoingFriendRequests: List<String> = emptyList(),
+    val groups: List<String> = emptyList(),
+    val groupInvitations: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val fcmToken: String = ""
 )

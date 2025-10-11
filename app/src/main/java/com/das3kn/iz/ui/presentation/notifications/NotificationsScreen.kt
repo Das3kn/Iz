@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,7 +50,7 @@ fun NotificationsScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadFriendRequests()
+        viewModel.loadNotifications()
     }
 
     Scaffold(
@@ -90,7 +91,7 @@ fun NotificationsScreen(
                 }
             }
 
-            uiState.friendRequests.isEmpty() -> {
+            uiState.friendRequests.isEmpty() && uiState.groupInvites.isEmpty() -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -98,7 +99,7 @@ fun NotificationsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Yeni arkadaşlık isteğiniz yok",
+                        text = "Yeni davetiniz yok",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -111,23 +112,50 @@ fun NotificationsScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(uiState.friendRequests) { requester ->
-                        FriendRequestItem(
-                            requester = requester,
-                            onAccept = {
-                                viewModel.acceptFriendRequest(requester.id)
-                            },
-                            onNavigateToProfile = {
-                                navController.navigate("${MainNavTarget.ProfileScreen.route}/${requester.id}")
-                            }
-                        )
+                    if (uiState.groupInvites.isNotEmpty()) {
+                        item {
+                            SectionTitle(text = "Grup Davetleri")
+                        }
+                        items(uiState.groupInvites) { invite ->
+                            GroupInviteItem(
+                                invite = invite,
+                                onAccept = { viewModel.acceptGroupInvite(invite.group.id) },
+                                onDecline = { viewModel.declineGroupInvite(invite.group.id) }
+                            )
+                        }
+                    }
+
+                    if (uiState.friendRequests.isNotEmpty()) {
+                        item {
+                            SectionTitle(text = "Arkadaşlık İstekleri")
+                        }
+                        items(uiState.friendRequests) { requester ->
+                            FriendRequestItem(
+                                requester = requester,
+                                onAccept = {
+                                    viewModel.acceptFriendRequest(requester.id)
+                                },
+                                onNavigateToProfile = {
+                                    navController.navigate("${MainNavTarget.ProfileScreen.route}/${requester.id}")
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold
+    )
 }
 
 @Composable
@@ -185,6 +213,61 @@ private fun FriendRequestItem(
 
             Button(onClick = onAccept) {
                 Text(text = "Kabul Et")
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupInviteItem(
+    invite: GroupInviteNotification,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp)
+    ) {
+        Text(
+            text = invite.group.name,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        invite.invitedBy?.let { inviter ->
+            Text(
+                text = "${inviter.displayName.ifBlank { inviter.username }} seni davet etti",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        Text(
+            text = "${invite.group.memberIds.size} üye • ${invite.group.pendingInvites.size} bekleyen",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onAccept,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = "Kabul Et")
+            }
+            TextButton(
+                onClick = onDecline,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = "Yoksay")
             }
         }
     }

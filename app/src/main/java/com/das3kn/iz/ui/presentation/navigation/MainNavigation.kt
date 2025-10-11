@@ -7,7 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.das3kn.iz.ui.presentation.GroupsContentScreen
+import com.das3kn.iz.ui.presentation.groups.GroupContentScreen
 import com.das3kn.iz.ui.presentation.ProfileScreen
 import com.das3kn.iz.ui.presentation.blogs.BlogContentScreen
 import com.das3kn.iz.ui.presentation.blogs.BlogsScreen
@@ -56,9 +56,16 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 userId = userId
             )
         }
-        composable(MainNavTarget.GroupContentScreen.route){
-            GroupsContentScreen(
-                navController = navController
+        composable(
+            route = "${MainNavTarget.GroupContentScreen.route}/{groupId}",
+            arguments = listOf(
+                navArgument("groupId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+            GroupContentScreen(
+                navController = navController,
+                groupId = groupId
             )
         }
         composable(MainNavTarget.NotificationsScreen.route) {
