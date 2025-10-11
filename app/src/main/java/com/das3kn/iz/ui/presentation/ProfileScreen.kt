@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -270,53 +269,35 @@ private fun ProfileHeaderSection(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF8B5CF6),
-                                Color(0xFF22D3EE)
-                            )
-                        )
-                    )
             ) {
-                ProfileAvatar(
-                    user = user,
+                Box(
                     modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 16.dp)
-                        .offset(y = 60.dp)
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 72.dp, bottom = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = user.displayName.ifBlank { "İsimsiz Kullanıcı" },
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (user.username.isNotBlank()) {
-                            Text(
-                                text = "@${user.username}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF8B5CF6),
+                                    Color(0xFF22D3EE)
+                                )
                             )
-                        }
-                    }
+                        )
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, end = 16.dp, top = 80.dp, bottom = 16.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    ProfileAvatar(
+                        user = user
+                    )
 
                     Spacer(modifier = Modifier.width(16.dp))
+
+                    Spacer(modifier = Modifier.weight(1f))
 
                     if (isOwnProfile) {
                         OutlinedButton(
@@ -338,6 +319,27 @@ private fun ProfileHeaderSection(
                             )
                         }
                     }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
+            ) {
+                Text(
+                    text = user.displayName.ifBlank { "İsimsiz Kullanıcı" },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (user.username.isNotBlank()) {
+                    Text(
+                        text = "@${user.username}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 if (user.bio.isNotBlank()) {
