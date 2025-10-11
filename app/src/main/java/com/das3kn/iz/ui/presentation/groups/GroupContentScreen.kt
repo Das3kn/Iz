@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -269,7 +269,7 @@ private fun GroupHeader(
             if (isMember) {
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(onClick = onInviteClick, enabled = isOwner || isMember) {
-                    Icon(imageVector = Icons.Filled.PersonAdd, contentDescription = null)
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = "Arkadaş Davet Et")
                 }
