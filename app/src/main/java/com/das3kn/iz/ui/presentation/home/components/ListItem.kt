@@ -108,6 +108,8 @@ fun ListItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            val mediaAvailable = displayPost.mediaUrls.isNotEmpty()
+
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -148,36 +150,46 @@ fun ListItem(
                     )
                 }
 
-                if (displayPost.mediaUrls.isNotEmpty()) {
+                if (mediaAvailable) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    PostMediaGallery(
-                        mediaUrls = displayPost.mediaUrls,
-                        mediaType = displayPost.mediaType,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp)),
-                        onVideoClick = { selectedVideoUrl = it },
-                        onImageClick = { selectedImageUrl = it }
-                    )
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ContentFunctions(
-                    onComment = { onComment(displayPost) },
-                    onLike = { onLike(displayPost) },
-                    onRepost = { onRepost(displayPost) },
-                    onSave = { onSave(displayPost) },
-                    isLiked = displayPost.likes.contains(currentUserId),
-                    isSaved = displayPost.saves.contains(currentUserId),
-                    likeCount = displayPost.likes.size,
-                    commentCount = displayPost.commentCount,
-                    repostCount = displayPost.shares,
-                    saveCount = displayPost.saves.size,
-                    modifier = Modifier.padding(top = 4.dp)
+        if (displayPost.mediaUrls.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            ) {
+                PostMediaGallery(
+                    mediaUrls = displayPost.mediaUrls,
+                    mediaType = displayPost.mediaType,
+                    modifier = Modifier.fillMaxWidth(),
+                    onVideoClick = { selectedVideoUrl = it },
+                    onImageClick = { selectedImageUrl = it }
                 )
             }
         }
+
+        ContentFunctions(
+            onComment = { onComment(displayPost) },
+            onLike = { onLike(displayPost) },
+            onRepost = { onRepost(displayPost) },
+            onSave = { onSave(displayPost) },
+            isLiked = displayPost.likes.contains(currentUserId),
+            isSaved = displayPost.saves.contains(currentUserId),
+            likeCount = displayPost.likes.size,
+            commentCount = displayPost.commentCount,
+            repostCount = displayPost.shares,
+            saveCount = displayPost.saves.size,
+            modifier = Modifier.padding(
+                start = 16.dp + 48.dp + 12.dp,
+                end = 16.dp,
+                top = 12.dp,
+                bottom = 12.dp
+            )
+        )
 
         Divider(
             modifier = Modifier.fillMaxWidth(),
