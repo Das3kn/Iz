@@ -450,11 +450,11 @@ fun PostDetailCard(
                     onLike = { onLike(displayPost) },
                     onRepost = { onRepost(displayPost) },
                     onSave = { onSave(displayPost) },
-                    onMore = { /* TODO: More options */ },
                     isLiked = displayPost.likes.contains(currentUserId),
                     isSaved = displayPost.saves.contains(currentUserId),
                     likeCount = displayPost.likes.size,
                     commentCount = displayPost.commentCount,
+                    repostCount = displayPost.shares,
                     saveCount = displayPost.saves.size
                 )
             }
