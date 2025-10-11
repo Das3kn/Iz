@@ -1,29 +1,58 @@
 package com.das3kn.iz.ui.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.das3kn.iz.R
-import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.model.User
 import com.das3kn.iz.ui.presentation.home.components.ListItem
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,10 +84,19 @@ fun ProfileScreen(
             if (isOtherUserProfile) {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = userState.user?.displayName ?: "Profil",
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = userState.user?.displayName ?: "Profil",
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "${postsState.posts.size} paylaşım",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
@@ -69,113 +107,141 @@ fun ProfileScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Kullanıcı bilgileri
-            item {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        ProfileCard(
-                            title = userState.user?.displayName ?: "Buğra Karagözoğlu",
-                            user = userState.user,
-                            isLoading = userState.isLoading,
-                            error = userState.error
-                        )
+        val backgroundColor = Color(0xFFF3F4F6)
+        val user = userState.user
 
-                        if (isOtherUserProfile) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            FriendshipAction(
-                                state = friendshipState,
-                                onAddFriend = {
-                                    userState.user?.id?.let { viewModel.sendFriendRequest(it) }
-                                },
-                                onAcceptRequest = {
-                                    userState.user?.id?.let { viewModel.acceptFriendRequest(it) }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceAround
-                            ) {
-                                UserOptionsItem(text = "Arkadaşlar", icon = R.drawable.person_virtual_reality_svgrepo_com){
-                                    navController.navigate(MainNavTarget.PeopleScreen.route)
-                                }
-                                UserOptionsItem(text = "Gruplar", icon = R.drawable.group_svgrepo_com){
-                                    navController.navigate(MainNavTarget.GroupsScreen.route)
-                                }
-                                UserOptionsItem(text = "Kaydedilenler", icon = R.drawable.bookmark_svgrepo_com){
-                                    navController.navigate(MainNavTarget.SavedPostsScreen.route)
-                                }
-                                UserOptionsItem(text = "Medya", icon = R.drawable.media_library_svgrepo_com)
-                            }
-                        }
-                    }
+        when {
+            userState.isLoading && user == null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
 
-            if (targetUserId != null || postsState.isLoading || postsState.error != null) {
-                item {
+            userState.error != null && user == null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = "Paylaşımlar",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        text = userState.error ?: "Profil yüklenemedi",
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
+            }
 
-                if (postsState.isLoading) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(backgroundColor)
+                        .padding(paddingValues),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    user?.let { loadedUser ->
+                        item {
+                            ProfileHeaderSection(
+                                user = loadedUser,
+                                postCount = postsState.posts.size,
+                                isOwnProfile = loadedUser.id == currentUserId,
+                                friendshipState = friendshipState,
+                                onAddFriend = { viewModel.sendFriendRequest(loadedUser.id) },
+                                onAcceptRequest = { viewModel.acceptFriendRequest(loadedUser.id) }
+                            )
                         }
                     }
-                } else if (postsState.error != null) {
+
                     item {
-                        Text(
-                            text = "Hata: ${postsState.error}",
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
+                        PostsHeader()
                     }
-                } else if (postsState.posts.isEmpty()) {
-                    item {
-                        Text(
-                            text = "Henüz paylaşım yok",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                    }
-                } else {
-                    items(postsState.posts) { post ->
-                        ListItem(
-                            post = post,
-                            currentUserId = currentUserId ?: "",
-                            onLike = { /* Like işlemi */ },
-                            onComment = { /* Comment işlemi */ },
-                            onSave = { /* Save işlemi */ },
-                            onProfileClick = { userId ->
-                                if (userId == currentUserId) {
-                                    navController.navigate(MainNavTarget.ProfileScreen.route)
-                                } else {
-                                    navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
+
+                    when {
+                        postsState.isLoading -> {
+                            item {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
                                 }
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
+                            }
+                        }
+
+                        postsState.error != null -> {
+                            item {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Text(
+                                        text = "Hata: ${postsState.error}",
+                                        color = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        postsState.posts.isEmpty() -> {
+                            item {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Text(
+                                        text = "Henüz paylaşım yok",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 32.dp),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+
+                        else -> {
+                            items(postsState.posts) { post ->
+                                ListItem(
+                                    post = post,
+                                    currentUserId = currentUserId ?: "",
+                                    onLike = { /* Like işlemi */ },
+                                    onComment = { /* Comment işlemi */ },
+                                    onSave = { /* Save işlemi */ },
+                                    onProfileClick = { userId ->
+                                        if (userId == currentUserId) {
+                                            navController.navigate(MainNavTarget.ProfileScreen.route)
+                                        } else {
+                                            navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
+                                        }
+                                    },
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -184,56 +250,274 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun FriendshipAction(
+private fun ProfileHeaderSection(
+    user: User,
+    postCount: Int,
+    isOwnProfile: Boolean,
+    friendshipState: FriendshipState,
+    onAddFriend: () -> Unit,
+    onAcceptRequest: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF8B5CF6),
+                                    Color(0xFF22D3EE)
+                                )
+                            )
+                        )
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, end = 16.dp, top = 80.dp, bottom = 16.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    ProfileAvatar(
+                        user = user
+                    )
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    if (isOwnProfile) {
+                        OutlinedButton(
+                            onClick = {},
+                            shape = CircleShape
+                        ) {
+                            Text(text = "Profili Düzenle")
+                        }
+                    } else {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            MessageButton()
+                            FollowActionButton(
+                                state = friendshipState,
+                                onAddFriend = onAddFriend,
+                                onAcceptRequest = onAcceptRequest
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
+            ) {
+                Text(
+                    text = user.displayName.ifBlank { "İsimsiz Kullanıcı" },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (user.username.isNotBlank()) {
+                    Text(
+                        text = "@${user.username}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (user.bio.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = user.bio,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                if (!isOwnProfile && friendshipState.hasIncomingRequest) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Bu kullanıcı sana arkadaşlık isteği gönderdi",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    ProfileStatisticItem(label = "Paylaşım", value = postCount)
+                    ProfileStatisticItem(label = "Takip", value = user.following.size)
+                    ProfileStatisticItem(label = "Takipçi", value = user.followers.size)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MessageButton(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.size(44.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        IconButton(onClick = { /* Mesajlaşma gelecekte eklenecek */ }) {
+            Icon(
+                imageVector = Icons.Default.Send,
+                contentDescription = "Mesaj Gönder"
+            )
+        }
+    }
+}
+
+@Composable
+private fun FollowActionButton(
     state: FriendshipState,
     onAddFriend: () -> Unit,
     onAcceptRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        when {
-            state.isFriend -> {
-                Button(
-                    onClick = {},
-                    enabled = false
-                ) {
-                    Text(text = "Arkadaşsınız")
-                }
-            }
-
-            state.hasIncomingRequest -> {
-                Text(
-                    text = "Bu kullanıcı sana arkadaşlık isteği gönderdi",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Button(onClick = onAcceptRequest) {
-                    Text(text = "İsteği Kabul Et")
-                }
-            }
-
-            state.isRequestPending -> {
-                Text(
-                    text = "Arkadaşlık isteğin gönderildi",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedButton(
-                    onClick = {},
-                    enabled = false
-                ) {
-                    Text(text = "İstek gönderildi")
-                }
-            }
-
-            else -> {
-                Button(onClick = onAddFriend) {
-                    Text(text = "Arkadaş Ekle")
-                }
+    when {
+        state.hasIncomingRequest -> {
+            Button(
+                onClick = onAcceptRequest,
+                shape = CircleShape,
+                modifier = modifier
+            ) {
+                Text(text = "İsteği Kabul Et")
             }
         }
+
+        state.isFriend -> {
+            Button(
+                onClick = {},
+                enabled = false,
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = modifier
+            ) {
+                Text(text = "Takip Ediliyor")
+            }
+        }
+
+        state.isRequestPending -> {
+            Button(
+                onClick = {},
+                enabled = false,
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = modifier
+            ) {
+                Text(text = "İstek Gönderildi")
+            }
+        }
+
+        else -> {
+            Button(
+                onClick = onAddFriend,
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = modifier
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Takip Et")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileAvatar(user: User, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .size(120.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(4.dp, Color.White),
+        tonalElevation = 4.dp
+    ) {
+        if (user.profileImageUrl.isNotBlank()) {
+            AsyncImage(
+                model = user.profileImageUrl,
+                contentDescription = user.displayName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = user.displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileStatisticItem(label: String, value: Int) {
+    Column {
+        Text(
+            text = value.toString(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun PostsHeader() {
+    Surface(color = MaterialTheme.colorScheme.surface) {
+        Text(
+            text = "Paylaşımlar",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            textAlign = TextAlign.Center
+        )
     }
 }
