@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AlternateEmail
@@ -44,7 +45,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -214,36 +218,40 @@ private fun NotificationListItem(
             .clickable(enabled = !notification.isRead, onClick = onMarkAsRead)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.Top) {
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface),
+                modifier = Modifier.size(56.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (notification.user.avatarUrl != null) {
-                    AsyncImage(
-                        model = notification.user.avatarUrl,
-                        contentDescription = notification.user.name,
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clip(CircleShape)
-                    )
-                } else {
-                    Text(
-                        text = notification.user.name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (notification.user.avatarUrl != null) {
+                        AsyncImage(
+                            model = notification.user.avatarUrl,
+                            contentDescription = notification.user.name,
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Text(
+                            text = notification.user.name.firstOrNull()?.uppercase() ?: "?",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
 
                 val (icon, color) = notification.type.icon()
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(2.dp)
-                        .size(22.dp)
+                        .size(24.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface),
                     contentAlignment = Alignment.Center
@@ -260,31 +268,40 @@ private fun NotificationListItem(
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = notification.user.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.clickable {
+                val messageText = buildAnnotatedString {
+                    pushStringAnnotation(tag = "user", annotation = "user")
+                    withStyle(
+                        style = SpanStyle(
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        append(notification.user.name)
+                    }
+                    pop()
+                    append(" ")
+                    append(notificationMessage(notification))
+                }
+
+                ClickableText(
+                    text = messageText,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    onClick = { offset ->
+                        messageText.getStringAnnotations(
+                            tag = "user",
+                            start = offset,
+                            end = offset
+                        ).firstOrNull()?.let {
                             onMarkAsRead()
                             onUserClick()
                         }
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = notificationMessage(notification),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    }
+                )
+
                 Spacer(modifier = Modifier.size(4.dp))
                 Text(
                     text = formatTimestamp(notification.timestamp),
@@ -296,6 +313,7 @@ private fun NotificationListItem(
             if (!notification.isRead) {
                 Box(
                     modifier = Modifier
+                        .padding(start = 8.dp)
                         .size(8.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
