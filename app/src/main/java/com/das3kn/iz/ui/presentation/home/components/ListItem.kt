@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -90,101 +91,112 @@ fun ListItem(
             }
         }
 
-        Row(
+        val contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = if (isRepost) 12.dp else 8.dp,
+            bottom = 16.dp
+        )
+
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.Top
+                .padding(contentPadding)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .clickable(enabled = userId.isNotBlank()) { onProfileClick(userId) },
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
-                if (displayPost.userProfileImage.isNotBlank()) {
-                    AsyncImage(
-                        model = displayPost.userProfileImage,
-                        contentDescription = displayName,
-                        modifier = Modifier.matchParentSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .clickable(enabled = userId.isNotBlank()) { onProfileClick(userId) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (displayPost.userProfileImage.isNotBlank()) {
+                        AsyncImage(
+                            model = displayPost.userProfileImage,
+                            contentDescription = displayName,
+                            modifier = Modifier.matchParentSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = displayName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.clickable(enabled = userId.isNotBlank()) { onProfileClick(userId) }
-                    )
-                    handle?.let {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.clickable(enabled = userId.isNotBlank()) { onProfileClick(userId) }
+                        )
+                        handle?.let {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = it,
+                            text = "·",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = formatTimeAgo(displayPost.createdAt),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "·",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = formatTimeAgo(displayPost.createdAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                    if (displayPost.content.isNotBlank()) {
+                        Text(
+                            text = displayPost.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+
+                    if (displayPost.mediaUrls.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        PostMediaGallery(
+                            mediaUrls = displayPost.mediaUrls,
+                            mediaType = displayPost.mediaType,
+                            modifier = Modifier.fillMaxWidth(),
+                            onVideoClick = { selectedVideoUrl = it },
+                            onImageClick = { selectedImageUrl = it }
+                        )
+                    }
+
+                    ContentFunctions(
+                        onComment = { onComment(displayPost) },
+                        onLike = { onLike(displayPost) },
+                        onRepost = { onRepost(displayPost) },
+                        onSave = { onSave(displayPost) },
+                        isLiked = displayPost.likes.contains(currentUserId),
+                        isReposted = hasReposted,
+                        isSaved = displayPost.saves.contains(currentUserId),
+                        likeCount = displayPost.likes.size,
+                        commentCount = displayPost.commentCount,
+                        repostCount = displayPost.shares,
+                        modifier = Modifier.padding(top = 16.dp)
                     )
                 }
-
-                if (displayPost.content.isNotBlank()) {
-                    Text(
-                        text = displayPost.content,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-
-                if (displayPost.mediaUrls.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    PostMediaGallery(
-                        mediaUrls = displayPost.mediaUrls,
-                        mediaType = displayPost.mediaType,
-                        modifier = Modifier.fillMaxWidth(),
-                        onVideoClick = { selectedVideoUrl = it },
-                        onImageClick = { selectedImageUrl = it }
-                    )
-                }
-
-                ContentFunctions(
-                    onComment = { onComment(displayPost) },
-                    onLike = { onLike(displayPost) },
-                    onRepost = { onRepost(displayPost) },
-                    onSave = { onSave(displayPost) },
-                    isLiked = displayPost.likes.contains(currentUserId),
-                    isReposted = hasReposted,
-                    isSaved = displayPost.saves.contains(currentUserId),
-                    likeCount = displayPost.likes.size,
-                    commentCount = displayPost.commentCount,
-                    repostCount = displayPost.shares,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
             }
         }
 
