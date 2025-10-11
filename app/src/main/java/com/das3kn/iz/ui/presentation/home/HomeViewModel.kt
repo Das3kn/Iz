@@ -6,6 +6,9 @@ import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.data.repository.PostRepository
 import com.das3kn.iz.data.repository.SavedPostRepository
 import com.das3kn.iz.data.repository.UserRepository
+import com.das3kn.iz.data.repository.GroupRepository
+import com.das3kn.iz.data.repository.AuthRepository
+import com.das3kn.iz.data.model.Group
 import com.das3kn.iz.data.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +24,9 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val postRepository: PostRepository,
     private val savedPostRepository: SavedPostRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val groupRepository: GroupRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -31,6 +36,21 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadPosts()
+        loadUserGroups()
+    }
+
+    private fun loadUserGroups() {
+        val currentUserId = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            groupRepository.getGroupsForUser(currentUserId)
+                .onSuccess { groups ->
+                    _uiState.update { state -> state.copy(userGroups = groups) }
+                }
+        }
+    }
+
+    fun refreshUserGroups() {
+        loadUserGroups()
     }
 
     fun loadPosts() {
@@ -248,6 +268,28 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    fun sharePostToGroup(originalPost: Post, user: User, groupId: String) {
+        if (groupId.isBlank() || originalPost.id.isBlank()) {
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val result = postRepository.createGroupRepost(originalPost, user, groupId)
+                result.fold(
+                    onSuccess = {
+                        // No additional action needed for home feed
+                    },
+                    onFailure = { exception ->
+                        _uiState.update { it.copy(error = exception.message ?: "Paylaşım başarısız") }
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "Paylaşım başarısız") }
+            }
+        }
+    }
 }
 
 data class HomeUiState(
@@ -258,5 +300,6 @@ data class HomeUiState(
     val searchResults: List<User> = emptyList(),
     val isSearchingUsers: Boolean = false,
     val searchError: String? = null,
-    val isSearchBarVisible: Boolean = false
+    val isSearchBarVisible: Boolean = false,
+    val userGroups: List<Group> = emptyList()
 )

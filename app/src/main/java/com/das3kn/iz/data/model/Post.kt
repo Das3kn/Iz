@@ -24,6 +24,7 @@ data class Post(
     val repostedByDisplayName: String? = null,
     val repostedByProfileImage: String? = null,
     val repostedAt: Long? = null,
+    val groupId: String? = null,
     @get:Exclude val originalPost: Post? = null
 )
 

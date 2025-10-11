@@ -49,7 +49,9 @@ class PostRepository @Inject constructor(
                 .get()
                 .await()
             
-            val posts = snapshot.documents.mapNotNull { it.toObject(Post::class.java) }
+            val posts = snapshot.documents
+                .mapNotNull { it.toObject(Post::class.java) }
+                .filter { it.groupId.isNullOrBlank() }
             val resolvedPosts = resolveReposts(posts)
             android.util.Log.d("PostRepository", "Retrieved ${posts.size} posts")
             posts.forEach { post ->
@@ -64,7 +66,8 @@ class PostRepository @Inject constructor(
     suspend fun getPostById(postId: String): Result<Post> {
         return try {
             val document = firestore.collection("posts").document(postId).get().await()
-            val post = document.toObject(Post::class.java)?.let { resolveReposts(listOf(it)).first() }
+            val post = document.toObject(Post::class.java)
+                ?.let { resolveReposts(listOf(it)).first() }
             if (post != null) {
                 Result.success(post)
             } else {
@@ -206,8 +209,29 @@ class PostRepository @Inject constructor(
                 .await()
 
             val posts = snapshot.documents.mapNotNull { it.toObject(Post::class.java) }
+                .filter { it.groupId.isNullOrBlank() }
                 .let { resolveReposts(it) }
                 .sortedByDescending { it.createdAt }
+            Result.success(posts)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getPostsByGroup(groupId: String, limit: Int = 50): Result<List<Post>> {
+        return try {
+            val snapshot = firestore.collection("posts")
+                .whereEqualTo("groupId", groupId)
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+
+            val posts = snapshot.documents
+                .mapNotNull { it.toObject(Post::class.java) }
+                .let { resolveReposts(it) }
+                .sortedByDescending { it.createdAt }
+
             Result.success(posts)
         } catch (e: Exception) {
             Result.failure(e)
@@ -286,7 +310,8 @@ class PostRepository @Inject constructor(
                 repostedByUsername = user.username,
                 repostedByDisplayName = displayName,
                 repostedByProfileImage = user.profileImageUrl,
-                repostedAt = System.currentTimeMillis()
+                repostedAt = System.currentTimeMillis(),
+                groupId = null
             )
 
             val docRef = firestore.collection("posts").add(repost).await()
@@ -299,6 +324,59 @@ class PostRepository @Inject constructor(
                     .await()
             } catch (e: Exception) {
                 android.util.Log.e("PostRepository", "createRepost: failed to increment share count", e)
+            }
+
+            Result.success(savedRepost)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createGroupRepost(originalPost: Post, user: User, groupId: String): Result<Post> {
+        return try {
+            if (groupId.isBlank()) {
+                return Result.failure(IllegalArgumentException("Geçersiz grup"))
+            }
+
+            val repostingUserId = user.id.ifBlank { return Result.failure(IllegalArgumentException("Kullanıcı bilgileri eksik")) }
+            val displayName = user.displayName.ifBlank {
+                user.username.ifBlank { repostingUserId }
+            }
+
+            val repost = Post(
+                userId = repostingUserId,
+                username = displayName,
+                userProfileImage = user.profileImageUrl,
+                content = "",
+                mediaUrls = emptyList(),
+                mediaType = originalPost.mediaType,
+                likes = emptyList(),
+                comments = emptyList(),
+                commentCount = 0,
+                shares = 0,
+                saves = emptyList(),
+                createdAt = System.currentTimeMillis(),
+                tags = emptyList(),
+                category = originalPost.category,
+                repostOfPostId = originalPost.id,
+                repostedByUserId = repostingUserId,
+                repostedByUsername = user.username,
+                repostedByDisplayName = displayName,
+                repostedByProfileImage = user.profileImageUrl,
+                repostedAt = System.currentTimeMillis(),
+                groupId = groupId
+            )
+
+            val docRef = firestore.collection("posts").add(repost).await()
+            val savedRepost = repost.copy(id = docRef.id, originalPost = originalPost)
+            firestore.collection("posts").document(docRef.id).set(savedRepost.copy(originalPost = null)).await()
+
+            try {
+                firestore.collection("posts").document(originalPost.id)
+                    .update("shares", FieldValue.increment(1))
+                    .await()
+            } catch (e: Exception) {
+                android.util.Log.e("PostRepository", "createGroupRepost: failed to increment share count", e)
             }
 
             Result.success(savedRepost)
