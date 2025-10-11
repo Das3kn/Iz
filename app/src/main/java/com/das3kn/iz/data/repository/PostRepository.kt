@@ -201,7 +201,7 @@ class PostRepository @Inject constructor(
     suspend fun getPostsByUser(userId: String): Result<List<Post>> {
         return try {
             val snapshot = firestore.collection("posts")
-                .whereEqualTo("authorId", userId)
+                .whereEqualTo("userId", userId)
                 .get()
                 .await()
 
