@@ -39,21 +39,14 @@ fun ProfileScreen(
     val friendshipState by viewModel.friendshipState.collectAsState()
 
     val isOtherUserProfile = userId != null
-
-    LaunchedEffect(userId) {
-        if (userId != null) {
-            viewModel.loadUser(userId)
-            viewModel.loadUserPosts(userId)
-        }
+    val targetUserId = remember(userId, currentUserId) {
+        userId ?: currentUserId
     }
 
-    LaunchedEffect(currentUserId, isOtherUserProfile) {
-        if (!isOtherUserProfile) {
-            val id = currentUserId
-            if (!id.isNullOrBlank()) {
-                viewModel.loadUser(id)
-                viewModel.loadUserPosts(id)
-            }
+    LaunchedEffect(targetUserId) {
+        targetUserId?.let { id ->
+            viewModel.loadUser(id)
+            viewModel.loadUserPosts(id)
         }
     }
 
@@ -131,7 +124,7 @@ fun ProfileScreen(
                 }
             }
 
-            if (isOtherUserProfile || currentUserId != null) {
+            if (targetUserId != null || postsState.isLoading || postsState.error != null) {
                 item {
                     Text(
                         text = "Paylaşımlar",
