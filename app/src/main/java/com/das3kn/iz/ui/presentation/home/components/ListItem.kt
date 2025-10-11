@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -63,12 +64,15 @@ fun ListItem(
         .lowercase()
         .takeIf { it.isNotBlank() }
         ?.let { "@$it" }
-    val hasReposted = post.repostedByUserId == currentUserId || displayPost.repostedByUserId == currentUserId
+    val hasReposted =
+        post.repostedByUserId == currentUserId || displayPost.repostedByUserId == currentUserId
 
     var selectedVideoUrl by remember { mutableStateOf<String?>(null) }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
     Column(modifier = modifier.fillMaxWidth()) {
+
+        // Repost şeridi
         if (isRepost) {
             Row(
                 modifier = Modifier
@@ -91,22 +95,19 @@ fun ListItem(
             }
         }
 
-        val contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = if (isRepost) 12.dp else 8.dp,
-            bottom = 16.dp
-        )
-
+        // İçerik alanı
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(contentPadding)
+                .padding(start = 16.dp, end = 16.dp, top = if (isRepost) 12.dp else 8.dp, bottom = 16.dp)
         ) {
+
+            // ÜST SATIR: Avatar + (Ad/Handle/Zaman + Metin)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
+                // Avatar
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -133,90 +134,96 @@ fun ListItem(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
+                // Sağ taraf (başlık satırı + içerik metni)
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = displayName,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.clickable(enabled = userId.isNotBlank()) { onProfileClick(userId) }
-                        )
-                        handle?.let {
-                            Spacer(modifier = Modifier.width(8.dp))
+
+                    // (Ad, handle) solda; zaman bilgisi sağda
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = displayName,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.clickable(enabled = userId.isNotBlank()) { onProfileClick(userId) }
                             )
+                            handle?.let {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "·",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Zaman bilgisi – tek satır, sarmasız
                         Text(
                             text = formatTimeAgo(displayPost.createdAt),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
 
+                    // İçerik metni
                     if (displayPost.content.isNotBlank()) {
                         Text(
                             text = displayPost.content,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.padding(top = 6.dp)
                         )
                     }
-
-                    if (displayPost.mediaUrls.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        PostMediaGallery(
-                            mediaUrls = displayPost.mediaUrls,
-                            mediaType = displayPost.mediaType,
-                            modifier = Modifier.fillMaxWidth(),
-                            onVideoClick = { selectedVideoUrl = it },
-                            onImageClick = { selectedImageUrl = it }
-                        )
-                    }
-
-                    ContentFunctions(
-                        onComment = { onComment(displayPost) },
-                        onLike = { onLike(displayPost) },
-                        onRepost = { onRepost(displayPost) },
-                        onSave = { onSave(displayPost) },
-                        isLiked = displayPost.likes.contains(currentUserId),
-                        isReposted = hasReposted,
-                        isSaved = displayPost.saves.contains(currentUserId),
-                        likeCount = displayPost.likes.size,
-                        commentCount = displayPost.commentCount,
-                        repostCount = displayPost.shares,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
                 }
             }
+
+            // --- DİKKAT --- //
+            // Medya ve aksiyonlar artık Row’un DIŞINDA (tam genişlikte)
+            if (displayPost.mediaUrls.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                PostMediaGallery(
+                    mediaUrls = displayPost.mediaUrls,
+                    mediaType = displayPost.mediaType,
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    onVideoClick = { selectedVideoUrl = it },
+                    onImageClick = { selectedImageUrl = it }
+                )
+            }
+
+            ContentFunctions(
+                onComment = { onComment(displayPost) },
+                onLike = { onLike(displayPost) },
+                onRepost = { onRepost(displayPost) },
+                onSave = { onSave(displayPost) },
+                isLiked = displayPost.likes.contains(currentUserId),
+                isReposted = hasReposted,
+                isSaved = displayPost.saves.contains(currentUserId),
+                likeCount = displayPost.likes.size,
+                commentCount = displayPost.commentCount,
+                repostCount = displayPost.shares,
+                modifier = Modifier.padding(top = 12.dp)
+            )
         }
 
-        Divider(
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-        )
+        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
     }
 
+    // Dialoglar
     selectedVideoUrl?.let { url ->
-        VideoPlayerDialog(
-            videoUrl = url,
-            onDismiss = { selectedVideoUrl = null }
-        )
+        VideoPlayerDialog(videoUrl = url, onDismiss = { selectedVideoUrl = null })
     }
-
     selectedImageUrl?.let { url ->
-        ImagePreviewDialog(
-            imageUrl = url,
-            onDismiss = { selectedImageUrl = null }
-        )
+        ImagePreviewDialog(imageUrl = url, onDismiss = { selectedImageUrl = null })
     }
 }
 
@@ -226,7 +233,6 @@ private fun formatTimeAgo(timestamp: Long): String {
     val minuteMillis = 60_000L
     val hourMillis = 3_600_000L
     val dayMillis = 86_400_000L
-
     return when {
         diff < hourMillis -> "${(diff / minuteMillis).coerceAtLeast(1)} dk"
         diff < dayMillis -> "${(diff / hourMillis).coerceAtLeast(1)} sa"
@@ -245,7 +251,8 @@ private fun ListItemPreview() {
         createdAt = System.currentTimeMillis() - 90 * 60 * 1000,
         likes = listOf("user2", "user3"),
         commentCount = 12,
-        shares = 4
+        shares = 4,
+        mediaUrls = listOf() // örnek
     )
     ListItem(
         post = dummyPost,
@@ -256,3 +263,4 @@ private fun ListItemPreview() {
         onRepost = {}
     )
 }
+
