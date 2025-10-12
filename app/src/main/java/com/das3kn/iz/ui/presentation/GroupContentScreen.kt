@@ -1,6 +1,5 @@
 package com.das3kn.iz.ui.presentation
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,193 +7,807 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.das3kn.iz.R
-import com.das3kn.iz.data.model.User
+import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupsContentScreen(modifier: Modifier = Modifier, navController: NavHostController) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        ProfileCard(
-            title = "Grup Adı"
+fun GroupsContentScreen(
+    modifier: Modifier = Modifier,
+    navController: NavHostController
+) {
+    val scrollState = rememberScrollState()
+
+    val admin = remember {
+        GroupDetailUser(
+            id = "1",
+            name = "Elif Kaya",
+            username = "elifkaya",
+            avatarUrl = "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=400&fit=crop"
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
+    }
+
+    var group by remember {
+        mutableStateOf(
+            GroupDetailUiModel(
+                id = "group-1",
+                name = "Yapay Zeka Topluluğu",
+                description = "Yapay zeka ve makine öğrenimi üzerine en yeni gelişmeleri, projeleri ve ilham verici başarı hikayelerini paylaştığımız topluluk.",
+                imageUrl = "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&h=900&fit=crop",
+                membersCount = 1254,
+                postsCount = 328,
+                isJoined = true,
+                admin = admin
+            )
+        )
+    }
+
+    val members = remember {
+        listOf(
+            admin,
+            GroupDetailUser(
+                id = "2",
+                name = "Ayşe Demir",
+                username = "aysedemir",
+                avatarUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop"
+            ),
+            GroupDetailUser(
+                id = "3",
+                name = "Ahmet Yılmaz",
+                username = "ahmetyilmaz",
+                avatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop"
+            ),
+            GroupDetailUser(
+                id = "4",
+                name = "Mehmet Kaya",
+                username = "mehmetkaya",
+                avatarUrl = "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=400&fit=crop"
+            )
+        )
+    }
+
+    val posts = remember {
+        mutableStateListOf(
+            GroupPostUiModel(
+                id = "post-1",
+                author = members[1],
+                content = "Yeni AI teknolojileri hakkında ne düşünüyorsunuz?",
+                timestamp = System.currentTimeMillis() - 30 * 60 * 1000,
+                likes = 45,
+                comments = 12,
+                reposts = 3
+            ),
+            GroupPostUiModel(
+                id = "post-2",
+                author = members[2],
+                content = "Bugün yeni bir proje başlattım, heyecanlıyım! 🚀",
+                imageUrl = "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=600&fit=crop",
+                timestamp = System.currentTimeMillis() - 2 * 60 * 60 * 1000,
+                likes = 78,
+                comments = 23,
+                reposts = 15,
+                isLiked = true
+            )
+        )
+    }
+
+    var selectedTab by remember { mutableStateOf(GroupDetailTab.POSTS) }
+    var selectedPostId by remember { mutableStateOf<String?>(null) }
+    var isCommentsOpen by remember { mutableStateOf(false) }
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(isCommentsOpen) {
+        if (!isCommentsOpen) {
+            sheetState.hide()
+        }
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            Surface(tonalElevation = 2.dp) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = null)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = group.name,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Text(
+                            text = "${group.membersCount} üye",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(scrollState)
+                .background(Color(0xFFF9FAFB))
         ) {
-            UserOptionsItem(text = "Arkadaşlar", icon = R.drawable.person_virtual_reality_svgrepo_com)
-            UserOptionsItem(text = "Gruplar", icon = R.drawable.group_svgrepo_com)
-            UserOptionsItem(text = "Forumlar", icon = R.drawable.comment_forum_svgrepo_com)
-            UserOptionsItem(text = "Medya", icon = R.drawable.media_library_svgrepo_com)
+            Box {
+                AsyncImage(
+                    model = group.imageUrl,
+                    contentDescription = group.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent)
+                            )
+                        )
+                )
+            }
+
+            Column(modifier = Modifier.background(Color.White)) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    AsyncImage(
+                        model = group.imageUrl,
+                        contentDescription = group.name,
+                        modifier = Modifier
+                            .padding(start = 24.dp)
+                            .offset(y = (-48).dp)
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(Color.White),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = group.name,
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = group.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        StatItem(icon = Icons.Outlined.People, label = "Üye", value = group.membersCount)
+                        StatItem(icon = Icons.Outlined.ChatBubbleOutline, label = "Paylaşım", value = group.postsCount)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    AdminSection(admin = group.admin)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (group.isJoined) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(
+                                onClick = {
+                                    group = group.copy(
+                                        isJoined = false,
+                                        membersCount = (group.membersCount - 1).coerceAtLeast(0)
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFE5E7EB),
+                                    contentColor = Color(0xFF111827)
+                                )
+                            ) {
+                                Text(text = "Gruptan Ayrıl")
+                            }
+
+                            Button(
+                                onClick = { /* TODO: navigate to create post */ },
+                                modifier = Modifier.size(52.dp),
+                                shape = CircleShape,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF7C3AED),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(text = "+")
+                            }
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                group = group.copy(
+                                    isJoined = true,
+                                    membersCount = group.membersCount + 1
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF7C3AED),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(text = "Gruba Katıl")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+
+            Surface(tonalElevation = 1.dp) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    TabRow(selectedTabIndex = selectedTab.ordinal) {
+                        GroupDetailTab.values().forEachIndexed { index, tab ->
+                            Tab(
+                                selected = selectedTab.ordinal == index,
+                                onClick = { selectedTab = tab },
+                                text = { Text(text = tab.title) }
+                            )
+                        }
+                    }
+
+                    when (selectedTab) {
+                        GroupDetailTab.POSTS -> {
+                            if (!group.isJoined) {
+                                LockedContent(onJoinClick = {
+                                    group = group.copy(
+                                        isJoined = true,
+                                        membersCount = group.membersCount + 1
+                                    )
+                                })
+                            } else if (posts.isEmpty()) {
+                                EmptyPosts(onCreatePost = { /* TODO */ })
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFFF9FAFB))
+                                        .padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    posts.forEach { post ->
+                                        GroupPostCard(
+                                            post = post,
+                                            onLike = {
+                                                val index = posts.indexOfFirst { it.id == post.id }
+                                                if (index >= 0) {
+                                                    val current = posts[index]
+                                                    posts[index] = current.copy(
+                                                        isLiked = !current.isLiked,
+                                                        likes = if (!current.isLiked) current.likes + 1 else (current.likes - 1).coerceAtLeast(0)
+                                                    )
+                                                }
+                                            },
+                                            onComment = {
+                                                selectedPostId = post.id
+                                                isCommentsOpen = true
+                                                coroutineScope.launch { sheetState.show() }
+                                            },
+                                            onRepost = {
+                                                val index = posts.indexOfFirst { it.id == post.id }
+                                                if (index >= 0) {
+                                                    val current = posts[index]
+                                                    posts[index] = current.copy(
+                                                        isReposted = !current.isReposted,
+                                                        reposts = if (!current.isReposted) current.reposts + 1 else (current.reposts - 1).coerceAtLeast(0)
+                                                    )
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        GroupDetailTab.MEMBERS -> {
+                            if (!group.isJoined) {
+                                LockedContent(onJoinClick = {
+                                    group = group.copy(
+                                        isJoined = true,
+                                        membersCount = group.membersCount + 1
+                                    )
+                                })
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color.White)
+                                ) {
+                                    members.forEach { member ->
+                                        MemberRow(member = member, isAdmin = member.id == group.admin.id)
+                                        Divider(color = Color(0xFFE5E7EB))
+                                    }
+                                }
+                            }
+                        }
+
+                        GroupDetailTab.ABOUT -> {
+                            AboutSection(group = group, admin = group.admin)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (isCommentsOpen && selectedPostId != null) {
+        ModalBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = { isCommentsOpen = false }
+        ) {
+            CommentsContent(postId = selectedPostId!!)
         }
     }
 }
 
 @Composable
-fun UserOptionsItem(
-    text: String,
-    icon: Int,
-    onClick: () -> Unit = {}
-) {
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Image(
-            imageVector = ImageVector.vectorResource(id = icon),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp)
-        )
+private fun StatItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: Int) {
+    Column(horizontalAlignment = Alignment.Start) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "$value",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+        }
         Text(
-            text = text,
-            style = TextStyle(
-                fontFamily = FontFamily(Font(R.font.roboto_medium)),
-                color = Color(0xFF444444),
-                fontSize = 10.sp
-            ),
-
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
-fun ProfileCard(
-    modifier: Modifier = Modifier, 
-    title: String,
-    user: User? = null,
-    isLoading: Boolean = false,
-    error: String? = null
-) {
-    Box(
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.worker_image),
-            contentDescription = null,
+private fun AdminSection(admin: GroupDetailUser) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        AsyncImage(
+            model = admin.avatarUrl,
+            contentDescription = admin.name,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp),
-            contentScale = ContentScale.FillWidth
+                .size(48.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
         )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(
+                text = "Yönetici",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = admin.name,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Text(
+                text = "@${admin.username}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
 
-        Box(
-            contentAlignment = Alignment.TopCenter,
-            modifier = Modifier
-                .padding(bottom = 16.dp)
+@Composable
+private fun LockedContent(onJoinClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 24.dp, vertical = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.People,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = "Grup içeriğini görmek için katılın",
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Bu grubun paylaşımlarını görmek için gruba katılmalısınız",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Button(
+            onClick = onJoinClick,
+            shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF7C3AED),
+                contentColor = Color.White
+            )
         ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .padding(top = 32.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White,
-                    contentColor = Color.White
-                ),
-                elevation = CardDefaults.cardElevation(8.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(top = 40.dp, bottom = 16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator()
-                    } else if (error != null) {
-                        Text(
-                            text = "Hata: $error",
-                            color = Color.Red
-                        )
-                    } else {
-                        Text(
-                            text = user?.displayName ?: title,
-                            style = TextStyle(
-                                fontFamily = FontFamily(Font(R.font.roboto_medium)),
-                                color = Color.Black
-                            )
-                        )
-                        
-                        if (user?.username?.isNotEmpty() == true) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "@${user.username}",
-                                style = TextStyle(
-                                    fontFamily = FontFamily(Font(R.font.roboto_medium)),
-                                    color = Color.Gray,
-                                    fontSize = 14.sp
-                                )
-                            )
-                        }
-                    }
-                }
-            }
+            Text(text = "Gruba Katıl")
+        }
+    }
+}
 
-            if (user != null && !isLoading && error == null) {
-                // Kullanıcı profil resmi
-                Box(
+@Composable
+private fun EmptyPosts(onCreatePost: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 24.dp, vertical = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "Henüz paylaşım yok",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "İlk paylaşımı yaparak topluluğu hareketlendirin",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Button(
+            onClick = onCreatePost,
+            shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF7C3AED),
+                contentColor = Color.White
+            )
+        ) {
+            Text(text = "İlk Paylaşımı Yap")
+        }
+    }
+}
+
+@Composable
+private fun MemberRow(member: GroupDetailUser, isAdmin: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { }
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        AsyncImage(
+            model = member.avatarUrl,
+            contentDescription = member.name,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = member.name,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Text(
+                text = "@${member.username}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (isAdmin) {
+            Text(
+                text = "Yönetici",
+                color = Color(0xFF7C3AED),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .background(Color(0xFFEDE9FE), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AboutSection(group: GroupDetailUiModel, admin: GroupDetailUser) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "Açıklama",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Text(
+                text = group.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "Grup Bilgileri",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(imageVector = Icons.Outlined.People, contentDescription = null)
+                Text(
+                    text = "${group.membersCount} üye",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(imageVector = Icons.Outlined.ChatBubbleOutline, contentDescription = null)
+                Text(
+                    text = "${group.postsCount} paylaşım",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "Yönetici",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            MemberRow(member = admin, isAdmin = true)
+        }
+    }
+}
+
+@Composable
+private fun GroupPostCard(
+    post: GroupPostUiModel,
+    onLike: () -> Unit,
+    onComment: () -> Unit,
+    onRepost: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = post.author.avatarUrl,
+                    contentDescription = post.author.name,
                     modifier = Modifier
-                        .offset(y = (-27).dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .size(100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                        .size(48.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = user.displayName.firstOrNull()?.uppercase() ?: "?",
-                        color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold
+                        text = post.author.name,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Text(
+                        text = "@${post.author.username} • ${post.timestamp.relativeTimeString()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            } else {
-                Image(
-                    imageVector = Icons.Filled.AccountCircle,
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = post.content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            post.imageUrl?.let { imageUrl ->
+                Spacer(modifier = Modifier.height(12.dp))
+                AsyncImage(
+                    model = imageUrl,
                     contentDescription = null,
                     modifier = Modifier
-                        .offset(y = (-27).dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .size(100.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(color = Color(0xFFE5E7EB))
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                PostActionButton(
+                    icon = Icons.Outlined.FavoriteBorder,
+                    label = post.likes.toString(),
+                    isActive = post.isLiked,
+                    onClick = onLike
+                )
+                PostActionButton(
+                    icon = Icons.Outlined.ChatBubbleOutline,
+                    label = post.comments.toString(),
+                    isActive = false,
+                    onClick = onComment
+                )
+                PostActionButton(
+                    icon = Icons.Outlined.Repeat,
+                    label = post.reposts.toString(),
+                    isActive = post.isReposted,
+                    onClick = onRepost
                 )
             }
         }
     }
 }
 
-
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun GroupsContentScreenPreview() {
+private fun PostActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    isActive: Boolean,
+    onClick: () -> Unit
+) {
+    val contentColor = if (isActive) Color(0xFF7C3AED) else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = contentColor)
+        Text(text = label, color = contentColor, style = MaterialTheme.typography.bodySmall)
+    }
 }
+
+@Composable
+private fun CommentsContent(postId: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "Yorumlar",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+        )
+        repeat(3) { index ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Kullanıcı ${index + 1}",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Text(
+                    text = "Post ($postId) için örnek yorum ${index + 1}.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Divider(color = Color(0xFFE5E7EB))
+            }
+        }
+    }
+}
+
+private data class GroupDetailUiModel(
+    val id: String,
+    val name: String,
+    val description: String,
+    val imageUrl: String,
+    val membersCount: Int,
+    val postsCount: Int,
+    val isJoined: Boolean,
+    val admin: GroupDetailUser
+)
+
+private data class GroupDetailUser(
+    val id: String,
+    val name: String,
+    val username: String,
+    val avatarUrl: String
+)
+
+private data class GroupPostUiModel(
+    val id: String,
+    val author: GroupDetailUser,
+    val content: String,
+    val timestamp: Long,
+    val likes: Int,
+    val comments: Int,
+    val reposts: Int,
+    val imageUrl: String? = null,
+    val isLiked: Boolean = false,
+    val isReposted: Boolean = false
+)
+
+private enum class GroupDetailTab(val title: String) {
+    POSTS("Paylaşımlar"),
+    MEMBERS("Üyeler"),
+    ABOUT("Hakkında")
+}
+
+private fun Long.relativeTimeString(): String {
+    val now = System.currentTimeMillis()
+    val diff = now - this
+    val minutes = diff / (60 * 1000)
+    val hours = diff / (60 * 60 * 1000)
+    val days = diff / (24 * 60 * 60 * 1000)
+    return when {
+        minutes < 1 -> "az önce"
+        minutes < 60 -> "$minutes dk"
+        hours < 24 -> "$hours sa"
+        else -> "$days g"
+    }
+}
+
