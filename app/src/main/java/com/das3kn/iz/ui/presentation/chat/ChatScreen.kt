@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -90,37 +92,27 @@ fun ChatScreen(
 
     val backgroundColor = Color(0xFFF9FAFB)
 
-    Scaffold(
-        containerColor = backgroundColor,
-        topBar = {
-            ChatTopBar(
-                user = partner,
-                onBack = onNavigateBack,
-                onUserClick = {
-                    partner?.let { user ->
-                        onNavigateToProfile(user.id)
-                    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+    ) {
+        ChatTopBar(
+            user = partner,
+            onBack = onNavigateBack,
+            onUserClick = {
+                partner?.let { user ->
+                    onNavigateToProfile(user.id)
                 }
-            )
-        },
-        bottomBar = {
-            ChatInputBar(
-                messageText = messageText,
-                onMessageChange = { messageText = it },
-                onSend = {
-                    if (messageText.isNotBlank()) {
-                        viewModel.sendMessage(chatId, messageText.trim())
-                        messageText = ""
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+            }
+        )
+
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             state = listState
         ) {
@@ -137,6 +129,21 @@ fun ChatScreen(
                 )
             }
         }
+
+        ChatInputBar(
+            messageText = messageText,
+            onMessageChange = { messageText = it },
+            onSend = {
+                if (messageText.isNotBlank()) {
+                    viewModel.sendMessage(chatId, messageText.trim())
+                    messageText = ""
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+        )
     }
 }
 
@@ -274,11 +281,12 @@ private fun ChatMessageBubble(
 private fun ChatInputBar(
     messageText: String,
     onMessageChange: (String) -> Unit,
-    onSend: () -> Unit
+    onSend: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(color = Color.White, shadowElevation = 0.dp) {
         Row(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
