@@ -172,7 +172,7 @@ fun SavedPostsScreen(
                                         viewModel.toggleLike(targetPost.id, currentUser?.uid ?: "")
                                     },
                                     onComment = { targetPost ->
-                                        navController.navigate("${MainNavTarget.PostDetailScreen.route}/${targetPost.id}")
+                                        navController.navigate("${MainNavTarget.CommentsScreen.route}/${targetPost.id}")
                                     },
                                     onSave = { targetPost ->
                                         viewModel.toggleSave(targetPost.id, currentUser?.uid ?: "")
