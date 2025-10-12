@@ -298,48 +298,54 @@ private fun GroupDetailHeader(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
         ) {
-            AsyncImage(
-                model = group.imageUrl,
-                contentDescription = group.name,
-                contentScale = ContentScale.Crop,
+            Row(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .border(4.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(32.dp))
-                    .align(Alignment.TopStart)
-                    .offset(y = (-60).dp)
-            )
-            if (isJoined) {
-                Row(
+                    .fillMaxWidth()
+                    .offset(y = (-60).dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                AsyncImage(
+                    model = group.imageUrl,
+                    contentDescription = group.name,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    FilledIconButton(
-                        onClick = { /* todo: davet */ },
-                        shape = CircleShape,
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        .size(120.dp)
+                        .clip(RoundedCornerShape(32.dp))
+                        .border(4.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(32.dp))
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                if (isJoined) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Outlined.PersonAdd, contentDescription = "Üye ekle")
-                    }
-                    FilledIconButton(
-                        onClick = onCreatePost,
-                        shape = CircleShape,
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = Color(0xFF7C3AED),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Paylaşım oluştur")
+                        FilledIconButton(
+                            onClick = { /* todo: davet */ },
+                            shape = CircleShape,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Outlined.PersonAdd, contentDescription = "Üye ekle")
+                        }
+                        FilledIconButton(
+                            onClick = onCreatePost,
+                            shape = CircleShape,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = Color(0xFF7C3AED),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Filled.Add, contentDescription = "Paylaşım oluştur")
+                        }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(68.dp))
+        Spacer(modifier = Modifier.height(60.dp))
 
         Column(
             modifier = Modifier
