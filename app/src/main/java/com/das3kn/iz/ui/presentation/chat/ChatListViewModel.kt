@@ -3,6 +3,7 @@ package com.das3kn.iz.ui.presentation.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das3kn.iz.data.model.Chat
+import com.das3kn.iz.data.model.User
 import com.das3kn.iz.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,11 +18,13 @@ class ChatListViewModel @Inject constructor(
     private val authRepository: com.das3kn.iz.data.repository.AuthRepository
 ) : ViewModel() {
 
+    private val useSampleData = true
+
     private val _chats = MutableStateFlow<List<Chat>>(emptyList())
     val chats: StateFlow<List<Chat>> = _chats.asStateFlow()
 
-    private val _chatUsers = MutableStateFlow<Map<String, List<com.das3kn.iz.data.model.User>>>(emptyMap())
-    val chatUsers: StateFlow<Map<String, List<com.das3kn.iz.data.model.User>>> = _chatUsers.asStateFlow()
+    private val _chatUsers = MutableStateFlow<Map<String, List<User>>>(emptyMap())
+    val chatUsers: StateFlow<Map<String, List<User>>> = _chatUsers.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -30,6 +33,11 @@ class ChatListViewModel @Inject constructor(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     fun loadChats() {
+        if (useSampleData) {
+            loadSampleChats()
+            return
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -39,8 +47,6 @@ class ChatListViewModel @Inject constructor(
                     result.onSuccess { chatList ->
                         _chats.value = chatList
                         _error.value = null
-                        
-                        // Her sohbet için kullanıcı bilgilerini al
                         loadChatUsers(chatList)
                     }.onFailure { exception ->
                         _error.value = exception.message ?: "Sohbetler yüklenemedi"
@@ -56,20 +62,30 @@ class ChatListViewModel @Inject constructor(
         }
     }
 
+    private fun loadSampleChats() {
+        _isLoading.value = true
+        val sampleChats = ChatSampleData.getSampleChats()
+        _chats.value = sampleChats.map { it.chat }
+        _chatUsers.value = sampleChats.associate { it.chat.id to it.participants }
+        _error.value = null
+        _isLoading.value = false
+    }
+
     private suspend fun loadChatUsers(chats: List<Chat>) {
+        if (useSampleData) return
+
         try {
-            val chatUsersMap = mutableMapOf<String, List<com.das3kn.iz.data.model.User>>()
-            
+            val chatUsersMap = mutableMapOf<String, List<User>>()
+
             for (chat in chats) {
                 val usersResult = chatRepository.getUsersByIds(chat.participants)
                 usersResult.onSuccess { users ->
                     chatUsersMap[chat.id] = users
                 }
             }
-            
+
             _chatUsers.value = chatUsersMap
         } catch (e: Exception) {
-            // Kullanıcı bilgileri yüklenemezse hata gösterme, sadece log
             println("Kullanıcı bilgileri yüklenemedi: ${e.message}")
         }
     }
@@ -83,6 +99,10 @@ class ChatListViewModel @Inject constructor(
     }
 
     fun getCurrentUserId(): String? {
-        return authRepository.currentUser?.uid
+        return if (useSampleData) {
+            ChatSampleData.currentUser.id
+        } else {
+            authRepository.currentUser?.uid
+        }
     }
 }
