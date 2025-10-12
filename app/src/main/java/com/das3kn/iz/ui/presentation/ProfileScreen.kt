@@ -229,7 +229,9 @@ fun ProfileScreen(
                                     post = post,
                                     currentUserId = currentUserId ?: "",
                                     onLike = { /* Like işlemi */ },
-                                    onComment = { /* Comment işlemi */ },
+                                    onComment = { targetPost ->
+                                        navController.navigate("${MainNavTarget.CommentsScreen.route}/${targetPost.id}")
+                                    },
                                     onSave = { /* Save işlemi */ },
                                     onProfileClick = { userId ->
                                         if (userId == currentUserId) {
