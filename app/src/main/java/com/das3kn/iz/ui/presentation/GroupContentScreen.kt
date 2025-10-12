@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -272,21 +273,15 @@ fun GroupsContentScreen(
                         }
                     }
 
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(start = 136.dp, top = 12.dp)
-                    ) {
-                        Text(
-                            text = group.name,
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color.White
-                        )
-                    }
                 }
 
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = group.name,
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = group.description,
                         style = MaterialTheme.typography.bodyMedium,
