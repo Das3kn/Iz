@@ -35,7 +35,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -155,6 +159,10 @@ fun GroupsContentScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
 
+    // TopBar için scroll davranışı (aşağı kaydırınca gizle, yukarı kaydırınca göster)
+    val topBarState = rememberTopAppBarState()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topBarState)
+
     LaunchedEffect(isCommentsOpen) {
         if (!isCommentsOpen) {
             sheetState.hide()
@@ -162,20 +170,13 @@ fun GroupsContentScreen(
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            Surface(tonalElevation = 2.dp) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = null)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
+            TopAppBar(
+                title = {
+                    Column {
                         Text(
                             text = group.name,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
@@ -186,8 +187,14 @@ fun GroupsContentScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-            }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
         }
     ) { innerPadding ->
         Column(
@@ -197,6 +204,7 @@ fun GroupsContentScreen(
                 .verticalScroll(scrollState)
                 .background(Color(0xFFF9FAFB))
         ) {
+            // Kapak görseli (yükseklik daha da küçültüldü)
             Box {
                 AsyncImage(
                     model = group.imageUrl,
@@ -204,42 +212,43 @@ fun GroupsContentScreen(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(140.dp) // 160 → 140
                 )
                 Box(
                     modifier = Modifier
                         .matchParentSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent)
+                                colors = listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent)
                             )
                         )
                 )
             }
 
             Column(modifier = Modifier.background(Color.White)) {
+                // Profil görseli ve aksiyonlar (ofset ve boyut yeniden azaltıldı)
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp)
-                            .offset(y = (-48).dp),
+                            .offset(y = (-20).dp), // -28 → -20
                         verticalAlignment = Alignment.Bottom
                     ) {
                         AsyncImage(
                             model = group.imageUrl,
                             contentDescription = group.name,
                             modifier = Modifier
-                                .size(120.dp)
-                                .clip(RoundedCornerShape(28.dp))
+                                .size(88.dp) // 96 → 88
+                                .clip(RoundedCornerShape(20.dp)) // 24 → 20
                                 .background(Color.White),
                             contentScale = ContentScale.Crop
                         )
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(12.dp)) // 16 → 12
                         Spacer(modifier = Modifier.weight(1f))
                         if (group.isJoined) {
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp), // 12 → 10
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Button(
@@ -260,7 +269,7 @@ fun GroupsContentScreen(
 
                                 Button(
                                     onClick = { /* TODO: navigate to create post */ },
-                                    modifier = Modifier.size(52.dp),
+                                    modifier = Modifier.size(48.dp), // 52 → 48
                                     shape = CircleShape,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF7C3AED),
@@ -272,27 +281,25 @@ fun GroupsContentScreen(
                             }
                         }
                     }
-
                 }
 
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = group.name,
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold) // headlineSmall → titleLarge
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp)) // 6 → 4
                     Text(
                         text = group.description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Spacer(modifier = Modifier.height(12.dp)) // 16 → 12
+                    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) { // 16 → 14
                         StatItem(icon = Icons.Outlined.People, label = "Üye", value = group.membersCount)
                         StatItem(icon = Icons.Outlined.ChatBubbleOutline, label = "Paylaşım", value = group.postsCount)
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp)) // 16 → 12
                     if (!group.isJoined) {
                         Button(
                             onClick = {
@@ -311,7 +318,7 @@ fun GroupsContentScreen(
                             Text(text = "Gruba Katıl")
                         }
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp)) // 24 → 20
                 }
             }
 
@@ -341,9 +348,9 @@ fun GroupsContentScreen(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 24.dp, vertical = 40.dp),
+                                            .padding(horizontal = 24.dp, vertical = 36.dp), // 40 → 36
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                        verticalArrangement = Arrangement.spacedBy(14.dp) // 16 → 14
                                     ) {
                                         Text(
                                             text = "Henüz paylaşım yok",
@@ -484,14 +491,14 @@ private fun LockedContent(onJoinClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = 40.dp),
+            .padding(horizontal = 24.dp, vertical = 36.dp), // 40 → 36
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp) // 16 → 14
     ) {
         Icon(
             imageVector = Icons.Outlined.People,
             contentDescription = null,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(44.dp), // 48 → 44
             tint = MaterialTheme.colorScheme.primary
         )
         Text(
@@ -615,7 +622,6 @@ private fun AboutSection(group: GroupDetailUiModel, admin: GroupDetailUser) {
 }
 
 @Composable
-@Composable
 private fun CommentsContent(postId: String) {
     Column(
         modifier = Modifier
@@ -681,4 +687,3 @@ private fun Long.relativeTimeString(): String {
         else -> "$days g"
     }
 }
-
