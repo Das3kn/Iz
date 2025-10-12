@@ -210,6 +210,73 @@ fun GroupsScreen(
 }
 
 @Composable
+private fun CreateGroupDialog(
+    groupName: String,
+    groupDescription: String,
+    groupImageUrl: String,
+    onGroupNameChange: (String) -> Unit,
+    onGroupDescriptionChange: (String) -> Unit,
+    onGroupImageUrlChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onCreate: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Yeni Grup Oluştur",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = groupName,
+                    onValueChange = onGroupNameChange,
+                    label = { Text(text = "Grup Adı") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = groupDescription,
+                    onValueChange = onGroupDescriptionChange,
+                    label = { Text(text = "Açıklama") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    maxLines = 4
+                )
+                OutlinedTextField(
+                    value = groupImageUrl,
+                    onValueChange = onGroupImageUrlChange,
+                    label = { Text(text = "Kapak Görseli URL") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "URL boş bırakılırsa varsayılan bir görsel kullanılacaktır.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onCreate,
+                enabled = groupName.isNotBlank() && groupDescription.isNotBlank()
+            ) {
+                Text(text = "Oluştur")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "İptal")
+            }
+        }
+    )
+}
+
+@Composable
 private fun GroupCard(
     group: GroupUiModel,
     onSelect: () -> Unit,
