@@ -225,6 +225,7 @@ fun GroupsContentScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupDetailTopBar(
     group: GroupUiModel,
@@ -260,6 +261,7 @@ private fun GroupDetailTopBar(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupDetailHeader(
     group: GroupUiModel,
