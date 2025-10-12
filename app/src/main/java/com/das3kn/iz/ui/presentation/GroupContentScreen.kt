@@ -1,7 +1,6 @@
 package com.das3kn.iz.ui.presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -58,11 +56,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.das3kn.iz.R
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.ui.presentation.groups.GroupMockData
 import com.das3kn.iz.ui.presentation.groups.GroupUiModel
@@ -155,16 +151,20 @@ fun GroupsContentScreen(
             when (selectedTab) {
                 GroupDetailTab.POSTS -> {
                     if (!groupState.isJoined) {
-                        item { LockedContentMessage(onJoinClick = {
-                            groupState = groupState.copy(
-                                isJoined = true,
-                                membersCount = groupState.membersCount + 1
-                            )
-                        }) }
+                        item {
+                            LockedContentMessage(onJoinClick = {
+                                groupState = groupState.copy(
+                                    isJoined = true,
+                                    membersCount = groupState.membersCount + 1
+                                )
+                            })
+                        }
                     } else if (posts.isEmpty()) {
-                        item { EmptyPostsState(onCreatePost = {
-                            navController.navigate(MainNavTarget.CreatePostScreen.route)
-                        }) }
+                        item {
+                            EmptyPostsState(onCreatePost = {
+                                navController.navigate(MainNavTarget.CreatePostScreen.route)
+                            })
+                        }
                     } else {
                         items(posts, key = { it.id }) { post ->
                             ListItem(
@@ -175,9 +175,7 @@ fun GroupsContentScreen(
                                     navController.navigate("${MainNavTarget.CommentsScreen.route}/${it.id}")
                                 },
                                 onSave = { toggleSave(posts, it.id, currentUser.id) },
-                                onRepost = {
-                                    toggleRepost(posts, it.id, currentUser)
-                                },
+                                onRepost = { toggleRepost(posts, it.id, currentUser) },
                                 onProfileClick = { userId ->
                                     if (userId.isNotBlank()) {
                                         navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
@@ -266,6 +264,14 @@ private fun GroupDetailHeader(
     onToggleJoin: () -> Unit,
     onCreatePost: () -> Unit
 ) {
+    // Boyutlar
+    val coverHeight = 200.dp
+    val avatarSize = 120.dp
+    val horizontalPadding = 20.dp
+
+    // Header yüksekliği = kapak + avatarın yarısı (taşma)
+    val headerHeight = coverHeight + (avatarSize / 2)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -274,50 +280,54 @@ private fun GroupDetailHeader(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(headerHeight)
         ) {
+            // Kapak: kenardan kenara
             AsyncImage(
                 model = group.imageUrl,
                 contentDescription = group.name,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(coverHeight)
+                    .align(Alignment.TopCenter)
             )
+
+            // Kapak üstü gradient
             Box(
                 modifier = Modifier
-                    .matchParentSize()
+                    .fillMaxWidth()
+                    .height(coverHeight)
+                    .align(Alignment.TopCenter)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))
                         )
                     )
             )
-        }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-        ) {
-            Row(
+            // 🔧 Yeni: Avatar ve aksiyonlar için padding'li overlay katman
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-60).dp),
-                verticalAlignment = Alignment.Bottom
+                    .fillMaxSize()
+                    .padding(horizontal = horizontalPadding) // padding align'dan ÖNCE
             ) {
+                // Avatar — alt-sola, kırpılma yok
                 AsyncImage(
                     model = group.imageUrl,
                     contentDescription = group.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(avatarSize)
                         .clip(RoundedCornerShape(32.dp))
-                        .border(4.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(32.dp))
+                        .align(Alignment.BottomStart)
                 )
 
-                Spacer(modifier = Modifier.weight(1f))
-
+                // Joined ise sağ altta aksiyonlar
                 if (isJoined) {
                     Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -345,29 +355,30 @@ private fun GroupDetailHeader(
             }
         }
 
-        Spacer(modifier = Modifier.height(60.dp))
+        // Başlığa çok küçük nefes payı
+        Spacer(modifier = Modifier.height(6.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = horizontalPadding)
         ) {
             Text(
                 text = group.name,
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = group.description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 InfoPill(icon = Icons.Outlined.People, label = "${group.membersCount} üye")
                 InfoPill(icon = Icons.Outlined.Article, label = "${group.postsCount} paylaşım")
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
             if (isJoined) {
                 OutlinedButton(
@@ -601,11 +612,7 @@ private fun toggleLike(posts: MutableList<Post>, postId: String, userId: String)
     if (index >= 0) {
         val current = posts[index]
         val hasLiked = current.likes.contains(userId)
-        val updatedLikes = if (hasLiked) {
-            current.likes.filterNot { it == userId }
-        } else {
-            current.likes + userId
-        }
+        val updatedLikes = if (hasLiked) current.likes.filterNot { it == userId } else current.likes + userId
         posts[index] = current.copy(likes = updatedLikes)
     }
 }
@@ -615,11 +622,7 @@ private fun toggleSave(posts: MutableList<Post>, postId: String, userId: String)
     if (index >= 0) {
         val current = posts[index]
         val hasSaved = current.saves.contains(userId)
-        val updatedSaves = if (hasSaved) {
-            current.saves.filterNot { it == userId }
-        } else {
-            current.saves + userId
-        }
+        val updatedSaves = if (hasSaved) current.saves.filterNot { it == userId } else current.saves + userId
         posts[index] = current.copy(saves = updatedSaves)
     }
 }
