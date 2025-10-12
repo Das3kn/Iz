@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
-import com.das3kn.iz.ui.presentation.navigation.MainNavigation
+import com.das3kn.iz.ui.presentation.auth.AuthFlow
 import com.das3kn.iz.ui.presentation.onboarding.OnboardingScreen
 import com.das3kn.iz.ui.presentation.onboarding.OnboardingViewModel
 import com.das3kn.iz.ui.theme.IzTheme
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     else -> {
-                        MainNavigation()
+                        AuthFlow()
                     }
                 }
             }

@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.das3kn.iz.ui.presentation.auth.AuthViewModel
 import coil.compose.AsyncImage
 import com.das3kn.iz.R
 import com.das3kn.iz.data.repository.AuthRepository
@@ -49,13 +50,12 @@ import java.io.File
 fun CreatePostScreen(
     onNavigateBack: () -> Unit,
     onPostCreated: () -> Unit = {},
-    viewModel: CreatePostViewModel = hiltViewModel()
+    viewModel: CreatePostViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    
-    // AuthViewModel'i inject et
-    val authViewModel: com.das3kn.iz.ui.presentation.auth.AuthViewModel = hiltViewModel()
+
     val userProfile by authViewModel.userProfile.collectAsState()
     val isLoadingProfile = userProfile == null
 
