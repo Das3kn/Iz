@@ -57,8 +57,18 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 userId = userId
             )
         }
-        composable(MainNavTarget.GroupContentScreen.route){
+        composable(
+            route = "${MainNavTarget.GroupContentScreen.route}/{groupId}/{isJoined}",
+            arguments = listOf(
+                navArgument("groupId") { type = NavType.StringType },
+                navArgument("isJoined") { type = NavType.BoolType }
+            )
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+            val isJoined = backStackEntry.arguments?.getBoolean("isJoined") ?: false
             GroupsContentScreen(
+                groupId = groupId,
+                initialIsJoined = isJoined,
                 navController = navController
             )
         }
