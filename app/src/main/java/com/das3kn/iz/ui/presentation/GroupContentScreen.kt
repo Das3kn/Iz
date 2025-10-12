@@ -271,15 +271,22 @@ fun GroupsContentScreen(
                             }
                         }
                     }
+
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(start = 136.dp, top = 12.dp)
+                    ) {
+                        Text(
+                            text = group.name,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = group.name,
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = group.description,
                         style = MaterialTheme.typography.bodyMedium,
