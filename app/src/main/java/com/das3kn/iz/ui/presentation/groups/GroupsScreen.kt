@@ -22,7 +22,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Article
@@ -30,7 +29,6 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Repeat
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,7 +56,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +72,7 @@ import coil.compose.AsyncImage
 import com.das3kn.iz.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.width
+import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
 
 @Suppress("UnusedParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,8 +98,6 @@ fun GroupsScreen(
     var groupImageUrl by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
     var isCreatePostOpen by remember { mutableStateOf(false) }
-    var isCommentsOpen by remember { mutableStateOf(false) }
-    var selectedPostId by remember { mutableStateOf<String?>(null) }
 
     val groupPosts = remember {
         mutableStateMapOf(
@@ -290,8 +286,7 @@ fun GroupsScreen(
                     }
                 },
                 onComment = { postId ->
-                    selectedPostId = postId
-                    isCommentsOpen = true
+                    navController.navigate("${MainNavTarget.CommentsScreen.route}/$postId")
                 },
                 onRepost = { postId ->
                     val currentPosts = groupPosts[selectedGroupValue.id] ?: return@GroupDetailContent
@@ -340,16 +335,6 @@ fun GroupsScreen(
         )
     }
 
-    if (isCommentsOpen && selectedGroupValue != null && selectedPostId != null) {
-        val postForComments = groupPosts[selectedGroupValue.id]?.firstOrNull { it.id == selectedPostId }
-        if (postForComments != null) {
-            CommentsSheet(
-                post = postForComments,
-                currentUser = currentUser,
-                onDismiss = { isCommentsOpen = false }
-            )
-        }
-    }
 }
 
 @Composable
@@ -814,272 +799,6 @@ private fun CreatePostSheet(
                 Text(text = "Paylaş")
             }
             Spacer(modifier = Modifier.height(24.dp))
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CommentsSheet(
-    post: GroupPostUiModel,
-    currentUser: GroupUserUiModel,
-    onDismiss: () -> Unit
-) {
-    val comments = remember {
-        mutableStateListOf(
-            CommentUiModel(
-                id = "1",
-                user = GroupUserUiModel(
-                    id = "2",
-                    name = "Ayşe Demir",
-                    username = "aysedemir",
-                    avatarUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop"
-                ),
-                content = "Harika bir paylaşım! 👏",
-                timestamp = System.currentTimeMillis() - 30 * 60 * 1000,
-                likes = 12,
-                isLiked = false
-            ),
-            CommentUiModel(
-                id = "2",
-                user = GroupUserUiModel(
-                    id = "3",
-                    name = "Mehmet Kaya",
-                    username = "mehmetkaya",
-                    avatarUrl = "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=400&fit=crop"
-                ),
-                content = "Çok beğendim, devamını bekliyorum",
-                timestamp = System.currentTimeMillis() - 60 * 60 * 1000,
-                likes = 5,
-                isLiked = true
-            )
-        )
-    }
-    var commentText by rememberSaveable { mutableStateOf("") }
-
-    fun addComment() {
-        val trimmed = commentText.trim()
-        if (trimmed.isEmpty()) return
-        val newComment = CommentUiModel(
-            id = System.currentTimeMillis().toString(),
-            user = currentUser,
-            content = trimmed,
-            timestamp = System.currentTimeMillis(),
-            likes = 0,
-            isLiked = false
-        )
-        comments.add(0, newComment)
-        commentText = ""
-    }
-
-    fun toggleLike(commentId: String) {
-        val index = comments.indexOfFirst { it.id == commentId }
-        if (index >= 0) {
-            val current = comments[index]
-            val updated = current.copy(
-                isLiked = !current.isLiked,
-                likes = if (current.isLiked) (current.likes - 1).coerceAtLeast(0) else current.likes + 1
-            )
-            comments[index] = updated
-        }
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onDismiss) {
-                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Geri")
-                    }
-                    Text(
-                        text = "Yorumlar",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(start = 12.dp)
-                    )
-                }
-            }
-            Divider(color = Color(0xFFE5E7EB))
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                item(key = "post-header") {
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        AsyncImage(
-                            model = post.author.avatarUrl,
-                            contentDescription = post.author.name,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape),
-                            placeholder = painterResource(id = R.drawable.worker_image),
-                            error = painterResource(id = R.drawable.worker_image)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = post.author.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "@${post.author.username}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "• ${post.timestamp.relativeTimeString()}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = post.content,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            post.imageUrl?.let { imageUrl ->
-                                Spacer(modifier = Modifier.height(12.dp))
-                                AsyncImage(
-                                    model = imageUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp)),
-                                    contentScale = ContentScale.Crop,
-                                    placeholder = painterResource(id = R.drawable.worker_image),
-                                    error = painterResource(id = R.drawable.worker_image)
-                                )
-                            }
-                        }
-                    }
-                }
-                items(
-                    items = comments,
-                    key = { it.id }
-                ) { comment ->
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        AsyncImage(
-                            model = comment.user.avatarUrl,
-                            contentDescription = comment.user.name,
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape),
-                            placeholder = painterResource(id = R.drawable.worker_image),
-                            error = painterResource(id = R.drawable.worker_image)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = comment.user.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "@${comment.user.username}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "• ${comment.timestamp.relativeTimeString()}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = comment.content,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .padding(top = 8.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .clickable { toggleLike(comment.id) }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = if (comment.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                                    contentDescription = null,
-                                    tint = if (comment.isLiked) Color(0xFF7C3AED) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = comment.likes.toString(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (comment.isLiked) Color(0xFF7C3AED) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            Divider(color = Color(0xFFE5E7EB))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AsyncImage(
-                    model = currentUser.avatarUrl,
-                    contentDescription = currentUser.name,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape),
-                    placeholder = painterResource(id = R.drawable.worker_image),
-                    error = painterResource(id = R.drawable.worker_image)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                OutlinedTextField(
-                    value = commentText,
-                    onValueChange = { commentText = it },
-                    placeholder = { Text(text = "Yorumunu yaz...") },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { addComment() })
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Button(
-                    onClick = { addComment() },
-                    enabled = commentText.isNotBlank(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7C3AED),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(text = "Gönder")
-                }
-            }
         }
     }
 }

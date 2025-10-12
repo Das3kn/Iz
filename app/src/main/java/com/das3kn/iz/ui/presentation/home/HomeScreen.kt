@@ -412,7 +412,7 @@ fun HomeScreen(
                                                             homeViewModel.toggleLike(targetPost.id, currentUser?.uid ?: "")
                                                         },
                                                         onComment = { targetPost ->
-                                                            navController.navigate("${MainNavTarget.PostDetailScreen.route}/${targetPost.id}")
+                                                            navController.navigate("${MainNavTarget.CommentsScreen.route}/${targetPost.id}")
                                                         },
                                                         onSave = { targetPost ->
                                                             homeViewModel.toggleSave(targetPost.id, currentUser?.uid ?: "")
