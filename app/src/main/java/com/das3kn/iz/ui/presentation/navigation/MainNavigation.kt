@@ -14,6 +14,7 @@ import com.das3kn.iz.ui.presentation.blogs.BlogsScreen
 import com.das3kn.iz.ui.presentation.chat.ChatListScreen
 import com.das3kn.iz.ui.presentation.chat.ChatScreen
 import com.das3kn.iz.ui.presentation.chat.NewChatScreen
+import com.das3kn.iz.ui.presentation.comments.CommentsScreen
 import com.das3kn.iz.ui.presentation.groups.GroupsScreen
 import com.das3kn.iz.ui.presentation.home.HomeScreen
 import com.das3kn.iz.ui.presentation.people.PeopleScreen
@@ -133,6 +134,24 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                 onNavigateBack = { navController.popBackStack() }
             )
         }
+
+        composable(
+            route = "${MainNavTarget.CommentsScreen.route}/{postId}",
+            arguments = listOf(
+                navArgument("postId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+            CommentsScreen(
+                postId = postId,
+                onBack = { navController.popBackStack() },
+                onUserClick = { userId ->
+                    if (userId.isNotBlank()) {
+                        navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
+                    }
+                }
+            )
+        }
         
         composable(MainNavTarget.SavedPostsScreen.route) {
             SavedPostsScreen(
@@ -157,6 +176,7 @@ enum class MainNavTarget(val route: String){
     NewChatScreen("new_chat_screen"),
     CreatePostScreen("create_post_screen"),
     PostDetailScreen("post_detail_screen"),
+    CommentsScreen("comments_screen"),
     SavedPostsScreen("saved_posts_screen"),
     NotificationsScreen("notifications_screen")
 }

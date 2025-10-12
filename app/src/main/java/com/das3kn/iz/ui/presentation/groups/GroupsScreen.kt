@@ -72,6 +72,7 @@ import coil.compose.AsyncImage
 import com.das3kn.iz.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.width
+import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
 
 @Suppress("UnusedParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,8 +98,6 @@ fun GroupsScreen(
     var groupImageUrl by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
     var isCreatePostOpen by remember { mutableStateOf(false) }
-    var isCommentsOpen by remember { mutableStateOf(false) }
-    var selectedPostId by remember { mutableStateOf<String?>(null) }
 
     val groupPosts = remember {
         mutableStateMapOf(
@@ -287,8 +286,7 @@ fun GroupsScreen(
                     }
                 },
                 onComment = { postId ->
-                    selectedPostId = postId
-                    isCommentsOpen = true
+                    navController.navigate("${MainNavTarget.CommentsScreen.route}/$postId")
                 },
                 onRepost = { postId ->
                     val currentPosts = groupPosts[selectedGroupValue.id] ?: return@GroupDetailContent
@@ -337,12 +335,6 @@ fun GroupsScreen(
         )
     }
 
-    if (isCommentsOpen && selectedGroupValue != null && selectedPostId != null) {
-        CommentsSheet(
-            postId = selectedPostId!!,
-            onDismiss = { isCommentsOpen = false }
-        )
-    }
 }
 
 @Composable
@@ -811,45 +803,6 @@ private fun CreatePostSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CommentsSheet(
-    postId: String,
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 24.dp)
-        ) {
-            Text(
-                text = "Yorumlar",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Yorumlar henüz kullanıma hazır değil. (#$postId)",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Text(text = "Kapat")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
 private data class GroupUiModel(
     val id: String,
     val name: String,
@@ -880,6 +833,15 @@ private data class GroupPostUiModel(
     val reposts: Int = 0,
     val isLiked: Boolean = false,
     val isReposted: Boolean = false
+)
+
+private data class CommentUiModel(
+    val id: String,
+    val user: GroupUserUiModel,
+    val content: String,
+    val timestamp: Long,
+    val likes: Int,
+    val isLiked: Boolean
 )
 
 private fun initialGroups(currentUser: GroupUserUiModel): List<GroupUiModel> = listOf(
