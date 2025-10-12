@@ -218,21 +218,63 @@ fun GroupsContentScreen(
 
             Column(modifier = Modifier.background(Color.White)) {
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    AsyncImage(
-                        model = group.imageUrl,
-                        contentDescription = group.name,
+                    Row(
                         modifier = Modifier
-                            .padding(start = 24.dp)
-                            .offset(y = (-48).dp)
-                            .size(120.dp)
-                            .clip(RoundedCornerShape(28.dp))
-                            .background(Color.White),
-                        contentScale = ContentScale.Crop
-                    )
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .offset(y = (-48).dp),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        AsyncImage(
+                            model = group.imageUrl,
+                            contentDescription = group.name,
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(28.dp))
+                                .background(Color.White),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.weight(1f))
+                        if (group.isJoined) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(
+                                    onClick = {
+                                        group = group.copy(
+                                            isJoined = false,
+                                            membersCount = (group.membersCount - 1).coerceAtLeast(0)
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFE5E7EB),
+                                        contentColor = Color(0xFF111827)
+                                    )
+                                ) {
+                                    Text(text = "Gruptan Ayrıl")
+                                }
+
+                                Button(
+                                    onClick = { /* TODO: navigate to create post */ },
+                                    modifier = Modifier.size(52.dp),
+                                    shape = CircleShape,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF7C3AED),
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text(text = "+")
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = group.name,
                         style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
@@ -249,38 +291,7 @@ fun GroupsContentScreen(
                         StatItem(icon = Icons.Outlined.ChatBubbleOutline, label = "Paylaşım", value = group.postsCount)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    if (group.isJoined) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Button(
-                                onClick = {
-                                    group = group.copy(
-                                        isJoined = false,
-                                        membersCount = (group.membersCount - 1).coerceAtLeast(0)
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFE5E7EB),
-                                    contentColor = Color(0xFF111827)
-                                )
-                            ) {
-                                Text(text = "Gruptan Ayrıl")
-                            }
-
-                            Button(
-                                onClick = { /* TODO: navigate to create post */ },
-                                modifier = Modifier.size(52.dp),
-                                shape = CircleShape,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF7C3AED),
-                                    contentColor = Color.White
-                                )
-                            ) {
-                                Text(text = "+")
-                            }
-                        }
-                    } else {
+                    if (!group.isJoined) {
                         Button(
                             onClick = {
                                 group = group.copy(
