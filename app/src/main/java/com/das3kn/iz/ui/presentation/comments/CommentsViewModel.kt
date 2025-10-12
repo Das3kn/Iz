@@ -61,10 +61,11 @@ class CommentsViewModel @Inject constructor(
         }
     }
 
-    fun refreshComments(postId: String = _uiState.value.post?.id ?: return) {
+    fun refreshComments(postId: String? = _uiState.value.post?.id) {
+        val targetPostId = postId ?: return
         _uiState.value = _uiState.value.copy(isLoadingComments = true)
         viewModelScope.launch {
-            val result = commentRepository.getCommentsForPost(postId)
+            val result = commentRepository.getCommentsForPost(targetPostId)
             result.fold(
                 onSuccess = { comments ->
                     _uiState.value = _uiState.value.copy(
