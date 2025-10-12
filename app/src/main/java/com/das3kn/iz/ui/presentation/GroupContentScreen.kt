@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -101,15 +102,19 @@ fun GroupsContentScreen(
     }
     var selectedTab by remember { mutableStateOf(GroupDetailTab.POSTS) }
 
+    // ✅ Küçük app bar + enterAlways (aşağı kaydırınca gizlenir, yukarı kaydırınca görünür)
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
     Scaffold(
         topBar = {
             GroupDetailTopBar(
                 group = groupState,
                 onBack = { navController.popBackStack() },
-                isAdmin = groupState.admin.id == currentUser.id
+                isAdmin = groupState.admin.id == currentUser.id,
+                scrollBehavior = scrollBehavior
             )
         },
-        modifier = modifier
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -225,9 +230,10 @@ fun GroupsContentScreen(
 private fun GroupDetailTopBar(
     group: GroupUiModel,
     onBack: () -> Unit,
-    isAdmin: Boolean
+    isAdmin: Boolean,
+    scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior
 ) {
-    TopAppBar(
+    TopAppBar( // 👈 küçük top bar
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Geri")
@@ -251,8 +257,10 @@ private fun GroupDetailTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface // istersen farklı ton verebilirsin
+        ),
+        scrollBehavior = scrollBehavior
     )
 }
 
@@ -306,13 +314,13 @@ private fun GroupDetailHeader(
                     )
             )
 
-            // 🔧 Yeni: Avatar ve aksiyonlar için padding'li overlay katman
+            // Padding'li overlay: kırpılma yok
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = horizontalPadding) // padding align'dan ÖNCE
+                    .padding(horizontal = horizontalPadding)
             ) {
-                // Avatar — alt-sola, kırpılma yok
+                // Avatar — alt-sola
                 AsyncImage(
                     model = group.imageUrl,
                     contentDescription = group.name,
@@ -326,8 +334,7 @@ private fun GroupDetailHeader(
                 // Joined ise sağ altta aksiyonlar
                 if (isJoined) {
                     Row(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd),
+                        modifier = Modifier.align(Alignment.BottomEnd),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -355,7 +362,7 @@ private fun GroupDetailHeader(
             }
         }
 
-        // Başlığa çok küçük nefes payı
+        // Başlık aralığı
         Spacer(modifier = Modifier.height(6.dp))
 
         Column(
