@@ -15,17 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,20 +37,24 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.das3kn.iz.data.model.Chat
 import com.das3kn.iz.data.model.User
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun ChatListScreen(
     onNavigateToChat: (String) -> Unit,
@@ -64,122 +65,90 @@ fun ChatListScreen(
     val chatUsers by viewModel.chatUsers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.loadChats()
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.refreshChats()
-    }
-
-    var searchQuery by remember { mutableStateOf("") }
     val filteredChats by remember(chats, chatUsers, searchQuery) {
         derivedStateOf {
-            val query = searchQuery.trim().lowercase(Locale.getDefault())
-            if (query.isEmpty()) {
-                chats
-            } else {
-                chats.filter { chat ->
-                    val users = chatUsers[chat.id] ?: emptyList()
-                    val otherUsers = users.filter { it.id != viewModel.getCurrentUserId() }
-                    otherUsers.any { user ->
-                        user.displayName.lowercase(Locale.getDefault()).contains(query) ||
-                                user.username.lowercase(Locale.getDefault()).contains(query)
-                    }
-                }
-            }
+            filterChats(chats, chatUsers, viewModel.getCurrentUserId(), searchQuery)
         }
     }
 
-    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+    val backgroundColor = Color(0xFFF9FAFB)
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToNewChat) {
-                Icon(Icons.Default.Add, contentDescription = "Yeni Sohbet")
-            }
-        },
-        containerColor = backgroundColor
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(backgroundColor)
-                .padding(paddingValues)
-        ) {
-            ChatListHeader(
+        containerColor = backgroundColor,
+        topBar = {
+            ChatsTopBar(
                 searchQuery = searchQuery,
                 onSearchQueryChange = { searchQuery = it }
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(backgroundColor)
+        ) {
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
+                }
 
-                    error != null -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = error ?: "Bilinmeyen hata",
-                                color = MaterialTheme.colorScheme.error
+                error != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = error ?: "Bilinmeyen hata",
+                            color = Color(0xFFEF4444)
+                        )
+                    }
+                }
+
+                filteredChats.isEmpty() -> {
+                    val message = if (searchQuery.isNotBlank()) {
+                        "Sohbet bulunamadı"
+                    } else {
+                        "Henüz mesajınız yok"
+                    }
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = message,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        itemsIndexed(filteredChats) { index, chat ->
+                            val users = chatUsers[chat.id] ?: emptyList()
+                            ChatListItem(
+                                chat = chat,
+                                users = users,
+                                currentUserId = viewModel.getCurrentUserId(),
+                                onClick = { onNavigateToChat(chat.id) }
                             )
-                        }
-                    }
 
-                    chats.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Henüz sohbet yok",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    filteredChats.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Aramanızla eşleşen sohbet bulunamadı",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(filteredChats) { chat ->
-                                val users = chatUsers[chat.id] ?: emptyList()
-                                ChatItem(
-                                    chat = chat,
-                                    users = users,
-                                    onClick = { onNavigateToChat(chat.id) },
-                                    currentUserId = viewModel.getCurrentUserId()
-                                )
+                            if (index < filteredChats.lastIndex) {
+                                Divider(color = Color(0xFFE5E7EB), thickness = 1.dp, modifier = Modifier.padding(start = 88.dp))
                             }
                         }
                     }
@@ -189,25 +158,42 @@ fun ChatListScreen(
     }
 }
 
+private fun filterChats(
+    chats: List<Chat>,
+    chatUsers: Map<String, List<User>>,
+    currentUserId: String?,
+    query: String
+): List<Chat> {
+    val trimmedQuery = query.trim().lowercase(Locale.getDefault())
+    if (trimmedQuery.isEmpty()) return chats
+
+    return chats.filter { chat ->
+        val users = chatUsers[chat.id] ?: emptyList()
+        val otherUsers = users.filter { it.id != currentUserId }
+        otherUsers.any { user ->
+            user.displayName.lowercase(Locale.getDefault()).contains(trimmedQuery) ||
+                    user.username.lowercase(Locale.getDefault()).contains(trimmedQuery)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ChatListHeader(
+private fun ChatsTopBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        tonalElevation = 1.dp
-    ) {
+    Surface(color = Color.White, shadowElevation = 0.dp) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
             Text(
                 text = "Mesajlar",
+                fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground
+                color = Color(0xFF111827)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -216,18 +202,22 @@ private fun ChatListHeader(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "Sohbet ara...") },
+                singleLine = true,
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = Color(0xFF9CA3AF)
                     )
                 },
-                placeholder = { Text(text = "Sohbet ara...") },
-                singleLine = true,
                 shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Color(0xFFF3F4F6),
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    textColor = Color(0xFF111827),
+                    placeholderColor = Color(0xFF9CA3AF)
                 )
             )
         }
@@ -235,50 +225,29 @@ private fun ChatListHeader(
 }
 
 @Composable
-fun ChatItem(
+private fun ChatListItem(
     chat: Chat,
     users: List<User>,
-    onClick: () -> Unit,
     currentUserId: String?,
+    onClick: () -> Unit
 ) {
-    val otherUsers = users.filter { it.id != currentUserId }
-    val displayName = otherUsers.joinToString(", ") { it.displayName.ifEmpty { it.username } }
-    val lastMessage = chat.lastMessage
-    val lastMessageText = lastMessage?.content ?: "Henüz mesaj yok"
-    val lastMessageTime = if (chat.lastMessageTime == 0L) "" else formatRelativeTimestamp(chat.lastMessageTime)
+    val otherUser = users.firstOrNull { it.id != currentUserId } ?: users.firstOrNull()
+    val lastMessageText = chat.lastMessage?.content?.takeIf { it.isNotBlank() } ?: "Henüz mesaj yok"
+    val timestampText = if (chat.lastMessageTime > 0) formatChatTimestamp(chat.lastMessageTime) else ""
     val unreadCount = currentUserId?.let { chat.unreadCount[it] ?: 0 } ?: 0
 
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            .background(Color.White)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
+            ChatAvatar(user = otherUser)
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -289,46 +258,45 @@ fun ChatItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = displayName.ifEmpty { "Sohbet" },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = otherUser?.displayName?.takeIf { it.isNotBlank() } ?: "Sohbet",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    if (lastMessageTime.isNotEmpty()) {
+                    if (timestampText.isNotEmpty()) {
                         Text(
-                            text = lastMessageTime,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = timestampText,
+                            color = Color(0xFF6B7280),
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = lastMessageText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF6B7280),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             if (unreadCount > 0) {
-                Spacer(modifier = Modifier.width(12.dp))
-
+                Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                        .background(Color(0xFF7C3AED))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = if (unreadCount > 99) "99+" else unreadCount.toString(),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = Color.White,
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -337,18 +305,46 @@ fun ChatItem(
     }
 }
 
-private fun formatRelativeTimestamp(timestamp: Long): String {
-    if (timestamp == 0L) return ""
+@Composable
+private fun ChatAvatar(user: User?) {
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFE5E7EB)),
+        contentAlignment = Alignment.Center
+    ) {
+        val imageUrl = user?.profileImageUrl.orEmpty()
+        if (imageUrl.isNotEmpty()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = user?.displayName,
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Text(
+                text = user?.displayName?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                color = Color(0xFF4C1D95),
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
 
+private fun formatChatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
 
+    val minute = 60_000
+    val hour = 60 * minute
+    val day = 24 * hour
+
     return when {
-        diff < 60_000 -> "Şimdi"
-        diff < 3_600_000 -> "${diff / 60_000} dk"
-        diff < 86_400_000 -> "${diff / 3_600_000} sa"
-        diff < 172_800_000 -> "Dün"
-        diff < 604_800_000 -> "${diff / 86_400_000} gün"
-        else -> SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(timestamp))
+        diff < hour -> "${(diff / minute).coerceAtLeast(1)} dk"
+        diff < day -> "${diff / hour} sa"
+        diff < 2 * day -> "Dün"
+        diff < 7 * day -> "${diff / day} gün"
+        else -> "${diff / day} gün"
     }
 }
