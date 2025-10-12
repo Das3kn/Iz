@@ -1,6 +1,11 @@
 package com.das3kn.iz.ui.presentation.onboarding
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,7 +24,6 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -95,89 +100,91 @@ fun OnboardingScreen(
 
     val current = slides[currentSlide]
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = Color.White
+    val density = LocalDensity.current
+    val infiniteTransition = rememberInfiniteTransition(label = "emojiBounce")
+    val bounceOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = with(density) { -16.dp.toPx() },
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "emojiOffset"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.linearGradient(
+                    colors = current.gradientColors.map { it.copy(alpha = 0.85f) }
+                )
+            )
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            Box(
+            Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 48.dp, bottom = 64.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = current.icon,
+                    fontSize = 64.sp,
                     modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = current.gradientColors.map { it.copy(alpha = 0.18f) }
-                            )
-                        )
+                        .padding(top = 32.dp)
+                        .graphicsLayer { translationY = bounceOffset }
                 )
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp)
-                        .padding(top = 48.dp, bottom = 64.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     Text(
-                        text = current.icon,
-                        fontSize = 64.sp,
-                        modifier = Modifier
-                            .padding(top = 32.dp)
-                            .animateContentSize()
+                        text = current.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color(0xFF111827),
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = current.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF4B5563),
+                        textAlign = TextAlign.Center
+                    )
+                }
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = current.title,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color(0xFF111827),
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = current.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF4B5563),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        slides.forEachIndexed { index, _ ->
-                            val isSelected = index == currentSlide
-                            val indicatorModifier = if (isSelected) {
-                                Modifier
-                                    .width(32.dp)
-                                    .height(8.dp)
-                                    .background(
-                                        color = Color(0xFF8B5CF6),
-                                        shape = CircleShape
-                                    )
-                            } else {
-                                Modifier
-                                    .size(8.dp)
-                                    .background(
-                                        color = Color(0xFFD1D5DB),
-                                        shape = CircleShape
-                                    )
-                            }
-                            Box(modifier = indicatorModifier)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    slides.forEachIndexed { index, _ ->
+                        val isSelected = index == currentSlide
+                        val indicatorModifier = if (isSelected) {
+                            Modifier
+                                .width(32.dp)
+                                .height(8.dp)
+                                .background(
+                                    color = Color(0xFF8B5CF6),
+                                    shape = CircleShape
+                                )
+                        } else {
+                            Modifier
+                                .size(8.dp)
+                                .background(
+                                    color = Color(0xFFD1D5DB),
+                                    shape = CircleShape
+                                )
                         }
+                        Box(modifier = indicatorModifier)
                     }
                 }
             }
