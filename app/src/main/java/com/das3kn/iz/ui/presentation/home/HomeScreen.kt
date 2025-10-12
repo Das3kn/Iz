@@ -13,13 +13,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -28,16 +28,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.sharp.AccountBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
@@ -47,8 +41,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -73,12 +65,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.das3kn.iz.NavigationItem
 import com.das3kn.iz.ui.presentation.auth.AuthViewModel
 import com.das3kn.iz.ui.presentation.auth.AuthState
+import com.das3kn.iz.ui.presentation.home.components.AppSidebar
 import com.das3kn.iz.ui.presentation.home.components.ListItem
+import com.das3kn.iz.ui.presentation.home.components.SidebarDestination
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
-import com.das3kn.iz.ui.theme.components.LoginCard
 import com.das3kn.iz.ui.presentation.home.HomeViewModel
 import com.das3kn.iz.data.repository.AuthRepository
 import com.das3kn.iz.data.model.User
@@ -97,8 +89,8 @@ fun HomeScreen(
     ) {
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
-        var selectedItemIndex by rememberSaveable {
-            mutableStateOf(0)
+        var selectedSidebarDestination by rememberSaveable {
+            mutableStateOf(SidebarDestination.Feed)
         }
         
         val authState by authViewModel.authState.collectAsState()
@@ -134,119 +126,79 @@ fun HomeScreen(
 
         ModalNavigationDrawer(
             drawerContent = {
-                ModalDrawerSheet {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Box {
-                        Column {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxHeight(0.4f)
-                                    .fillMaxWidth()
-                            ) {
-                                // Header decoration
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(24.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "Iz",
-                                        style = MaterialTheme.typography.headlineLarge,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                ModalDrawerSheet(
+                    modifier = Modifier.widthIn(min = 280.dp, max = 340.dp),
+                    drawerContainerColor = MaterialTheme.colorScheme.background
+                ) {
+                    AppSidebar(
+                        currentUser = currentUser,
+                        userProfile = userProfile,
+                        isLoadingProfile = isLoadingProfile,
+                        selectedDestination = selectedSidebarDestination,
+                        onNavigate = { destination ->
+                            selectedSidebarDestination = destination
+                            when (destination) {
+                                SidebarDestination.Feed -> {
+                                    navController.navigate(MainNavTarget.HomeScreen.route) {
+                                        launchSingleTop = true
+                                    }
                                 }
-                            }
-                            Surface(
-                                color = MaterialTheme.colorScheme.surface,
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth()
-                            ) {}
-                        }
 
-                        Column {
-                            if (isUserLoggedIn) {
-                                // Kullanıcı giriş yapmışsa profil bilgilerini göster
-                                UserProfileSection(
-                                    currentUser = currentUser,
-                                    userProfile = userProfile,
-                                    isLoadingProfile = isLoadingProfile,
-                                    onSignOut = {
-                                        authViewModel.signOut()
-                                        scope.launch {
-                                            drawerState.close()
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .padding(
-                                            horizontal = 14.dp,
-                                            vertical = 48.dp
-                                        )
-                                        .padding(top = 62.dp)
-                                )
-                            } else {
-                                // Kullanıcı giriş yapmamışsa login card'ı göster
-                                LoginCard(
-                                    modifier = Modifier
-                                        .padding(
-                                            horizontal = 14.dp,
-                                            vertical = 48.dp
-                                        )
-                                        .padding(top = 62.dp)
-                                )
-                            }
-
-                            if (isUserLoggedIn) {
-                                // Giriş yapmış kullanıcı için menü öğeleri
-                                menuItems.forEachIndexed { index, item ->
-                                    NavigationDrawerItem(
-                                        label = {
-                                            Text(text = item.title)
-                                        },
-                                        selected = index == selectedItemIndex,
-                                        onClick = {
-                                            when (item.route) {
-                                                "logout" -> {
-                                                    // Oturum kapat
-                                                    authViewModel.signOut()
-                                                    scope.launch {
-                                                        drawerState.close()
-                                                    }
-                                                }
-                                                else -> {
-                                                    // Normal navigation
-                                                    navController.navigate(item.route)
-                                                    selectedItemIndex = index
-                                                    scope.launch {
-                                                        drawerState.close()
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        icon = {
-                                            Icon(
-                                                imageVector = if (index == selectedItemIndex) {
-                                                    item.selectedIcon
-                                                } else item.unselectedIcon,
-                                                contentDescription = item.title
-                                            )
-                                        },
-                                        badge = {
-                                            item.badgeCount?.let {
-                                                Text(text = it.toString())
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .padding(NavigationDrawerItemDefaults.ItemPadding)
-                                    )
+                                SidebarDestination.Groups -> {
+                                    navController.navigate(MainNavTarget.GroupsScreen.route) {
+                                        launchSingleTop = true
+                                    }
                                 }
+
+                                SidebarDestination.Chats -> {
+                                    navController.navigate(MainNavTarget.ChatListScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+
+                                SidebarDestination.Notifications -> {
+                                    navController.navigate(MainNavTarget.NotificationsScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+
+                                SidebarDestination.Profile -> {
+                                    navController.navigate(MainNavTarget.ProfileScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+
+                                SidebarDestination.Friends -> {
+                                    navController.navigate(MainNavTarget.PeopleScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+
+                                SidebarDestination.Saved -> {
+                                    navController.navigate(MainNavTarget.SavedPostsScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+
+                                SidebarDestination.Settings -> {
+                                    navController.navigate(MainNavTarget.ProfileScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+
+                                SidebarDestination.Help -> Unit
+                            }
+                        },
+                        onLogout = {
+                            authViewModel.signOut()
+                            selectedSidebarDestination = SidebarDestination.Feed
+                        },
+                        onClose = {
+                            scope.launch {
+                                drawerState.close()
                             }
                         }
-                    }
+                    )
                 }
             },
             drawerState = drawerState
@@ -651,124 +603,6 @@ private fun UserSearchResultItem(
         }
     }
 }
-
-@Composable
-fun UserProfileSection(
-    currentUser: com.google.firebase.auth.FirebaseUser?,
-    userProfile: User?,
-    isLoadingProfile: Boolean,
-    onSignOut: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-    ) {
-        // Profil resmi placeholder'ı
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(
-                    MaterialTheme.colorScheme.primary,
-                    shape = CircleShape
-                ),
-            contentAlignment = androidx.compose.ui.Alignment.Center
-        ) {
-            if (isLoadingProfile) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(40.dp),
-                    color = Color.White
-                )
-            } else {
-                Text(
-                    text = userProfile?.displayName?.firstOrNull()?.uppercase()
-                        ?: currentUser?.displayName?.firstOrNull()?.uppercase()
-                        ?: "U",
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        if (isLoadingProfile) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-        } else {
-            Text(
-                text = userProfile?.displayName
-                    ?: userProfile?.username
-                    ?: currentUser?.displayName 
-                    ?: "Kullanıcı",
-                style = MaterialTheme.typography.titleMedium,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-            )
-        }
-        
-        Text(
-            text = currentUser?.email ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        androidx.compose.material3.OutlinedButton(
-            onClick = onSignOut,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ExitToApp,
-                contentDescription = "Çıkış Yap",
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.size(8.dp))
-            Text("Çıkış Yap")
-        }
-    }
-}
-
-val menuItems = listOf(
-    NavigationItem(
-        title = "Ana Sayfa",
-        selectedIcon = Icons.Filled.Home,
-        unselectedIcon = Icons.Filled.Home,
-        route = MainNavTarget.HomeScreen.route
-    ),
-    NavigationItem(
-        title = "Sohbetler",
-        selectedIcon = Icons.Filled.Email,
-        unselectedIcon = Icons.Filled.Email,
-        route = MainNavTarget.ChatListScreen.route
-    ),
-    NavigationItem(
-        title = "Gruplar",
-        selectedIcon = Icons.Sharp.AccountBox,
-        unselectedIcon = Icons.Sharp.AccountBox,
-        route = MainNavTarget.GroupsScreen.route
-    ),
-    NavigationItem(
-        title = "Bloglar",
-        selectedIcon = Icons.Filled.Settings,
-        unselectedIcon = Icons.Outlined.Settings,
-        route = MainNavTarget.BlogsScreen.route
-    ),
-    NavigationItem(
-        title = "Profil",
-        selectedIcon = Icons.Filled.Settings,
-        unselectedIcon = Icons.Outlined.Settings,
-        route = MainNavTarget.ProfileScreen.route
-    ),
-    NavigationItem(
-        title = "Oturum Kapat",
-        selectedIcon = Icons.Filled.ExitToApp,
-        unselectedIcon = Icons.Filled.ExitToApp,
-        route = "logout" // Özel route
-    ),
-)
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
