@@ -124,28 +124,28 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(top = 48.dp, bottom = 64.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = current.icon,
-                    fontSize = 64.sp,
-                    modifier = Modifier
-                        .padding(top = 32.dp)
-                        .graphicsLayer { translationY = bounceOffset }
-                )
-
                 Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Text(
+                        text = current.icon,
+                        fontSize = 64.sp,
+                        modifier = Modifier
+                            .padding(top = 32.dp)
+                            .graphicsLayer { translationY = bounceOffset }
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     Text(
                         text = current.title,
                         style = MaterialTheme.typography.headlineMedium,
@@ -153,7 +153,9 @@ fun OnboardingScreen(
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center
                     )
+
                     Spacer(modifier = Modifier.height(16.dp))
+
                     Text(
                         text = current.description,
                         style = MaterialTheme.typography.bodyMedium,
@@ -163,6 +165,9 @@ fun OnboardingScreen(
                 }
 
                 Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
