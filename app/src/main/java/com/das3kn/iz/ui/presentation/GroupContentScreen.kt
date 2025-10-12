@@ -133,10 +133,7 @@ fun GroupsContentScreen(
                             membersCount = (groupState.membersCount + if (joined) 1 else -1).coerceAtLeast(0)
                         )
                     },
-                    onCreatePost = { navController.navigate(MainNavTarget.CreatePostScreen.route) },
-                    onNavigateToAdmin = { userId ->
-                        navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
-                    }
+                    onCreatePost = { navController.navigate(MainNavTarget.CreatePostScreen.route) }
                 )
             }
 
@@ -267,8 +264,7 @@ private fun GroupDetailHeader(
     group: GroupUiModel,
     isJoined: Boolean,
     onToggleJoin: () -> Unit,
-    onCreatePost: () -> Unit,
-    onNavigateToAdmin: (String) -> Unit
+    onCreatePost: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -297,54 +293,59 @@ private fun GroupDetailHeader(
             )
         }
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(horizontal = 20.dp)
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                AsyncImage(
-                    model = group.imageUrl,
-                    contentDescription = group.name,
-                    contentScale = ContentScale.Crop,
+            AsyncImage(
+                model = group.imageUrl,
+                contentDescription = group.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .border(4.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(32.dp))
+                    .align(Alignment.TopStart)
+                    .offset(y = (-60).dp)
+            )
+            if (isJoined) {
+                Row(
                     modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(32.dp))
-                        .border(4.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(32.dp))
-                        .align(Alignment.TopStart)
-                        .offset(y = (-60).dp)
-                )
-                if (isJoined) {
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FilledIconButton(
+                        onClick = { /* todo: davet */ },
+                        shape = CircleShape,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
                     ) {
-                        FilledIconButton(
-                            onClick = { /* todo: davet */ },
-                            shape = CircleShape,
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Outlined.PersonAdd, contentDescription = "Üye ekle")
-                        }
-                        FilledIconButton(
-                            onClick = onCreatePost,
-                            shape = CircleShape,
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = Color(0xFF7C3AED),
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Filled.Add, contentDescription = "Paylaşım oluştur")
-                        }
+                        Icon(imageVector = Icons.Outlined.PersonAdd, contentDescription = "Üye ekle")
+                    }
+                    FilledIconButton(
+                        onClick = onCreatePost,
+                        shape = CircleShape,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = Color(0xFF7C3AED),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Paylaşım oluştur")
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(56.dp))
+        Spacer(modifier = Modifier.height(68.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
             Text(
                 text = group.name,
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
@@ -360,26 +361,7 @@ private fun GroupDetailHeader(
                 InfoPill(icon = Icons.Outlined.People, label = "${group.membersCount} üye")
                 InfoPill(icon = Icons.Outlined.Article, label = "${group.postsCount} paylaşım")
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { onNavigateToAdmin(group.admin.id) }
-            ) {
-                AsyncImage(
-                    model = group.admin.avatarUrl,
-                    contentDescription = group.admin.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(text = "Yönetici", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(text = group.admin.name, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             if (isJoined) {
                 OutlinedButton(
