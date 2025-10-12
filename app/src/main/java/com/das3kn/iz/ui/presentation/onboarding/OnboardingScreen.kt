@@ -116,9 +116,7 @@ fun OnboardingScreen(
         modifier = modifier
             .fillMaxSize()
             .background(
-                brush = Brush.linearGradient(
-                    colors = current.gradientColors.map { it.copy(alpha = 0.85f) }
-                )
+                Color.White
             )
     ) {
         Column(

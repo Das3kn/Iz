@@ -342,7 +342,7 @@ private fun CommentItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Row(alignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.Top) {
             CommentAvatar(
                 avatarUrl = null,
                 initials = comment.username.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
@@ -468,7 +468,7 @@ private fun ReplyItem(
     onUserClick: (String) -> Unit,
     onLike: () -> Unit
 ) {
-    Row(alignment = Alignment.Top) {
+    Row(verticalAlignment = Alignment.Top) {
         CommentAvatar(
             avatarUrl = null,
             initials = reply.username.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
