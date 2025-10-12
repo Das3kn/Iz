@@ -46,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -353,7 +354,7 @@ private fun CommentItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Row(alignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.Top) {
             CommentAvatar(
                 avatarUrl = null,
                 initials = comment.username.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
@@ -442,7 +443,7 @@ private fun ReplyItem(
     onUserClick: (String) -> Unit,
     onLike: () -> Unit
 ) {
-    Row(alignment = Alignment.Top) {
+    Row(verticalAlignment = Alignment.Top) {
         CommentAvatar(
             avatarUrl = null,
             initials = reply.username.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
