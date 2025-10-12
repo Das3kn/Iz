@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // Media picker dependencies
     implementation("androidx.activity:activity-compose:1.8.2")
