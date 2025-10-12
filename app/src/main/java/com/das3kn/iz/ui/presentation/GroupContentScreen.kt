@@ -21,13 +21,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.People
-import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
@@ -58,6 +54,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.das3kn.iz.data.model.MediaType
+import com.das3kn.iz.data.model.Post
+import com.das3kn.iz.ui.presentation.home.components.ListItem
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,27 +115,34 @@ fun GroupsContentScreen(
         )
     }
 
+    val currentUserId = remember { "current-user" }
     val posts = remember {
         mutableStateListOf(
-            GroupPostUiModel(
+            Post(
                 id = "post-1",
-                author = members[1],
+                userId = members[1].id,
+                username = members[1].name,
+                userProfileImage = members[1].avatarUrl,
                 content = "Yeni AI teknolojileri hakkında ne düşünüyorsunuz?",
-                timestamp = System.currentTimeMillis() - 30 * 60 * 1000,
-                likes = 45,
-                comments = 12,
-                reposts = 3
+                createdAt = System.currentTimeMillis() - 30 * 60 * 1000,
+                likes = List(45) { "user-${it + 1}" },
+                commentCount = 12,
+                shares = 3
             ),
-            GroupPostUiModel(
+            Post(
                 id = "post-2",
-                author = members[2],
+                userId = members[2].id,
+                username = members[2].name,
+                userProfileImage = members[2].avatarUrl,
                 content = "Bugün yeni bir proje başlattım, heyecanlıyım! 🚀",
-                imageUrl = "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=600&fit=crop",
-                timestamp = System.currentTimeMillis() - 2 * 60 * 60 * 1000,
-                likes = 78,
-                comments = 23,
-                reposts = 15,
-                isLiked = true
+                mediaUrls = listOf("https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=600&fit=crop"),
+                mediaType = MediaType.IMAGE,
+                createdAt = System.currentTimeMillis() - 2 * 60 * 60 * 1000,
+                likes = List(78) { "user-${it + 51}" },
+                commentCount = 23,
+                shares = 15,
+                repostedByUserId = currentUserId,
+                repostedByDisplayName = "Sen"
             )
         )
     }
@@ -243,11 +249,6 @@ fun GroupsContentScreen(
                         StatItem(icon = Icons.Outlined.ChatBubbleOutline, label = "Paylaşım", value = group.postsCount)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    AdminSection(admin = group.admin)
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     if (group.isJoined) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(
@@ -323,44 +324,78 @@ fun GroupsContentScreen(
                                     )
                                 })
                             } else if (posts.isEmpty()) {
-                                EmptyPosts(onCreatePost = { /* TODO */ })
-                            } else {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(Color(0xFFF9FAFB))
-                                        .padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    posts.forEach { post ->
-                                        GroupPostCard(
-                                            post = post,
-                                            onLike = {
-                                                val index = posts.indexOfFirst { it.id == post.id }
-                                                if (index >= 0) {
-                                                    val current = posts[index]
-                                                    posts[index] = current.copy(
-                                                        isLiked = !current.isLiked,
-                                                        likes = if (!current.isLiked) current.likes + 1 else (current.likes - 1).coerceAtLeast(0)
-                                                    )
-                                                }
-                                            },
-                                            onComment = {
-                                                selectedPostId = post.id
-                                                isCommentsOpen = true
-                                                coroutineScope.launch { sheetState.show() }
-                                            },
-                                            onRepost = {
-                                                val index = posts.indexOfFirst { it.id == post.id }
-                                                if (index >= 0) {
-                                                    val current = posts[index]
-                                                    posts[index] = current.copy(
-                                                        isReposted = !current.isReposted,
-                                                        reposts = if (!current.isReposted) current.reposts + 1 else (current.reposts - 1).coerceAtLeast(0)
-                                                    )
-                                                }
-                                            }
+                                Surface(color = Color.White) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 24.dp, vertical = 40.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        Text(
+                                            text = "Henüz paylaşım yok",
+                                            style = MaterialTheme.typography.titleMedium
                                         )
+                                        Text(
+                                            text = "İlk paylaşımı yaparak topluluğu hareketlendirin",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Button(
+                                            onClick = { /* TODO: open create post */ },
+                                            shape = RoundedCornerShape(24.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = Color(0xFF7C3AED),
+                                                contentColor = Color.White
+                                            )
+                                        ) {
+                                            Text(text = "İlk Paylaşımı Yap")
+                                        }
+                                    }
+                                }
+                            } else {
+                                Surface(color = Color.White) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        posts.forEach { post ->
+                                            ListItem(
+                                                post = post,
+                                                currentUserId = currentUserId,
+                                                onLike = { toggledPost ->
+                                                    val index = posts.indexOfFirst { it.id == toggledPost.id }
+                                                    if (index >= 0) {
+                                                        val current = posts[index]
+                                                        val hasLiked = current.likes.contains(currentUserId)
+                                                        val updatedLikes = if (hasLiked) {
+                                                            current.likes.filterNot { it == currentUserId }
+                                                        } else {
+                                                            current.likes + currentUserId
+                                                        }
+                                                        posts[index] = current.copy(likes = updatedLikes)
+                                                    }
+                                                },
+                                                onComment = { toggledPost ->
+                                                    selectedPostId = toggledPost.id
+                                                    isCommentsOpen = true
+                                                    coroutineScope.launch { sheetState.show() }
+                                                },
+                                                onRepost = { toggledPost ->
+                                                    val index = posts.indexOfFirst { it.id == toggledPost.id }
+                                                    if (index >= 0) {
+                                                        val current = posts[index]
+                                                        val hasReposted = current.repostedByUserId == currentUserId
+                                                        posts[index] = current.copy(
+                                                            shares = if (hasReposted) (current.shares - 1).coerceAtLeast(0) else current.shares + 1,
+                                                            repostedByUserId = if (hasReposted) null else currentUserId,
+                                                            repostedByUsername = if (hasReposted) null else "currentuser",
+                                                            repostedByDisplayName = if (hasReposted) null else "Siz"
+                                                        )
+                                                    }
+                                                },
+                                                onSave = {},
+                                                onProfileClick = {}
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -431,37 +466,6 @@ private fun StatItem(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
 }
 
 @Composable
-private fun AdminSection(admin: GroupDetailUser) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        AsyncImage(
-            model = admin.avatarUrl,
-            contentDescription = admin.name,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(
-                text = "Yönetici",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = admin.name,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Text(
-                text = "@${admin.username}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
 private fun LockedContent(onJoinClick: () -> Unit) {
     Column(
         modifier = Modifier
@@ -497,39 +501,6 @@ private fun LockedContent(onJoinClick: () -> Unit) {
             )
         ) {
             Text(text = "Gruba Katıl")
-        }
-    }
-}
-
-@Composable
-private fun EmptyPosts(onCreatePost: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "Henüz paylaşım yok",
-            style = MaterialTheme.typography.titleMedium
-        )
-        Text(
-            text = "İlk paylaşımı yaparak topluluğu hareketlendirin",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Button(
-            onClick = onCreatePost,
-            shape = RoundedCornerShape(24.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF7C3AED),
-                contentColor = Color.White
-            )
-        ) {
-            Text(text = "İlk Paylaşımı Yap")
         }
     }
 }
@@ -631,106 +602,6 @@ private fun AboutSection(group: GroupDetailUiModel, admin: GroupDetailUser) {
 }
 
 @Composable
-private fun GroupPostCard(
-    post: GroupPostUiModel,
-    onLike: () -> Unit,
-    onComment: () -> Unit,
-    onRepost: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = post.author.avatarUrl,
-                    contentDescription = post.author.name,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = post.author.name,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                    )
-                    Text(
-                        text = "@${post.author.username} • ${post.timestamp.relativeTimeString()}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = post.content,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            post.imageUrl?.let { imageUrl ->
-                Spacer(modifier = Modifier.height(12.dp))
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = Color(0xFFE5E7EB))
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                PostActionButton(
-                    icon = Icons.Outlined.FavoriteBorder,
-                    label = post.likes.toString(),
-                    isActive = post.isLiked,
-                    onClick = onLike
-                )
-                PostActionButton(
-                    icon = Icons.Outlined.ChatBubbleOutline,
-                    label = post.comments.toString(),
-                    isActive = false,
-                    onClick = onComment
-                )
-                PostActionButton(
-                    icon = Icons.Outlined.Repeat,
-                    label = post.reposts.toString(),
-                    isActive = post.isReposted,
-                    onClick = onRepost
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PostActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    isActive: Boolean,
-    onClick: () -> Unit
-) {
-    val contentColor = if (isActive) Color(0xFF7C3AED) else MaterialTheme.colorScheme.onSurfaceVariant
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = contentColor)
-        Text(text = label, color = contentColor, style = MaterialTheme.typography.bodySmall)
-    }
-}
-
 @Composable
 private fun CommentsContent(postId: String) {
     Column(
@@ -776,19 +647,6 @@ private data class GroupDetailUser(
     val name: String,
     val username: String,
     val avatarUrl: String
-)
-
-private data class GroupPostUiModel(
-    val id: String,
-    val author: GroupDetailUser,
-    val content: String,
-    val timestamp: Long,
-    val likes: Int,
-    val comments: Int,
-    val reposts: Int,
-    val imageUrl: String? = null,
-    val isLiked: Boolean = false,
-    val isReposted: Boolean = false
 )
 
 private enum class GroupDetailTab(val title: String) {
