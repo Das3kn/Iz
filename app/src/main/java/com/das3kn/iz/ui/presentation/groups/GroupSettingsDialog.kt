@@ -2,9 +2,11 @@ package com.das3kn.iz.ui.presentation.groups
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,8 +34,8 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -107,6 +109,7 @@ fun GroupSettingsDialog(
                 Divider()
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
@@ -218,7 +221,9 @@ private fun SettingsTopBar(
             Button(
                 onClick = onSave,
                 enabled = !isSaving,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED))
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
             ) {
                 Text(text = if (isSaving) "Kaydediliyor..." else "Kaydet")
             }
@@ -264,16 +269,20 @@ private fun GroupInfoSection(
                 error = painterResource(id = R.drawable.worker_image)
             )
             if (isAdmin) {
-                IconButton(
-                    onClick = { /* TODO: Add image picker */ },
+                Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .background(Color(0xFF7C3AED), CircleShape)
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF7C3AED))
+                        .clickable(onClick = { /* TODO: Add image picker */ }),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Filled.CameraAlt,
                         contentDescription = "Görsel değiştir",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -285,6 +294,7 @@ private fun GroupInfoSection(
             onValueChange = onGroupNameChange,
             enabled = isAdmin,
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             placeholder = { Text(text = "Grup adı") }
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -297,6 +307,7 @@ private fun GroupInfoSection(
                 .fillMaxWidth()
                 .height(120.dp),
             placeholder = { Text(text = "Grup açıklaması") },
+            shape = RoundedCornerShape(12.dp),
             maxLines = 5
         )
         if (isAdmin) {
@@ -306,6 +317,7 @@ private fun GroupInfoSection(
                 value = imageUrl,
                 onValueChange = onImageUrlChange,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 placeholder = { Text(text = "https://...") }
             )
         }
@@ -342,9 +354,8 @@ private fun PrivacySection(
                     "Herkes içeriği görebilir"
                 }
                 Surface(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape),
+                    modifier = Modifier.size(42.dp),
+                    shape = CircleShape,
                     color = Color(0xFFF3F4F6)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -361,7 +372,12 @@ private fun PrivacySection(
                 checked = isPrivate,
                 onCheckedChange = onPrivacyChange,
                 enabled = isAdmin,
-                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF7C3AED))
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF7C3AED),
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFFE5E7EB)
+                )
             )
         }
     }
@@ -392,37 +408,42 @@ private fun AdminSelectionSection(members: List<GroupUserUiModel>) {
         Spacer(modifier = Modifier.height(12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             members.forEach { member ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFFF9FAFB))
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 0.dp
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AsyncImage(
-                            model = member.avatarUrl,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(16.dp)),
-                            contentScale = ContentScale.Crop,
-                            placeholder = painterResource(id = R.drawable.worker_image),
-                            error = painterResource(id = R.drawable.worker_image)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(text = member.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(text = "@${member.username}", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF6B7280))
-                        }
-                    }
-                    OutlinedButton(
-                        onClick = { /* TODO: Change admin */ },
-                        shape = RoundedCornerShape(24.dp)
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = "Yönetici Yap")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AsyncImage(
+                                model = member.avatarUrl,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Crop,
+                                placeholder = painterResource(id = R.drawable.worker_image),
+                                error = painterResource(id = R.drawable.worker_image)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(text = member.name, style = MaterialTheme.typography.bodyLarge)
+                                Text(text = "@${member.username}", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF6B7280))
+                            }
+                        }
+                        OutlinedButton(
+                            onClick = { /* TODO: Change admin */ },
+                            shape = RoundedCornerShape(999.dp),
+                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp)
+                        ) {
+                            Text(text = "Yönetici Yap")
+                        }
                     }
                 }
             }
@@ -446,40 +467,45 @@ private fun DangerZoneSection(
             style = MaterialTheme.typography.titleMedium.copy(color = Color(0xFFEF4444), fontWeight = FontWeight.SemiBold)
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFFFF1F2))
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            border = BorderStroke(1.dp, Color(0xFFFECACA))
         ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = CircleShape,
-                color = Color(0xFFFFE4E6)
+            Row(
+                modifier = Modifier
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(imageVector = Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFEF4444))
+                Surface(
+                    modifier = Modifier.size(40.dp),
+                    shape = CircleShape,
+                    color = Color(0xFFFFE4E6)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(imageVector = Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFEF4444))
+                    }
                 }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Grubu Sil", style = MaterialTheme.typography.bodyLarge.copy(color = Color(0xFFEF4444)))
-                Text(
-                    text = "Bu işlem geri alınamaz. Tüm paylaşımlar ve üyeler silinecektir.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B7280)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "Grubu Sil", style = MaterialTheme.typography.bodyLarge.copy(color = Color(0xFFEF4444)))
+                    Text(
+                        text = "Bu işlem geri alınamaz. Tüm paylaşımlar ve üyeler silinecektir.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF6B7280)
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
             onClick = onDeleteClick,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(999.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
             border = BorderStroke(1.dp, Color(0xFFEF4444)),
+            contentPadding = PaddingValues(vertical = 12.dp),
             enabled = !isDeleting
         ) {
             Text(text = if (isDeleting) "Siliniyor..." else "Grubu Sil")
