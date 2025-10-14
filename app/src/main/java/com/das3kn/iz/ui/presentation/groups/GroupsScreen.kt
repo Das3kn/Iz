@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.das3kn.iz.R
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
@@ -64,21 +66,19 @@ import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
 @Composable
 fun GroupsScreen(
     modifier: Modifier = Modifier,
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: GroupsViewModel = hiltViewModel()
 ) {
-    val currentUser = remember { GroupMockData.currentUser }
-
-    var groups by remember { mutableStateOf(GroupMockData.initialGroups()) }
+    val uiState by viewModel.uiState.collectAsState()
     var isCreateGroupOpen by remember { mutableStateOf(false) }
     var groupName by remember { mutableStateOf("") }
     var groupDescription by remember { mutableStateOf("") }
-    var groupImageUrl by remember { mutableStateOf("") }
-    var searchQuery by remember { mutableStateOf("") }
+    var groupImageUrl by remember { mutableStateOf("") } 
 
-    val filteredGroups = remember(groups, searchQuery) {
-        groups.filter { group ->
-            group.name.contains(searchQuery, ignoreCase = true) ||
-                group.description.contains(searchQuery, ignoreCase = true)
+    val filteredGroups = remember(uiState.groups, uiState.searchQuery) {
+        uiState.groups.filter { group ->
+            group.name.contains(uiState.searchQuery, ignoreCase = true) ||
+                group.description.contains(uiState.searchQuery, ignoreCase = true)
         }
     }
 
@@ -119,8 +119,8 @@ fun GroupsScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.setSearchQuery(it) },
                         placeholder = { Text(text = "Grup ara...") },
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
@@ -151,17 +151,7 @@ fun GroupsScreen(
                         onSelect = {
                             navController.navigate("${MainNavTarget.GroupContentScreen.route}/${group.id}/${group.isJoined}")
                         },
-                        onToggleJoin = { toggledGroup ->
-                            groups = groups.map {
-                                if (it.id == toggledGroup.id) {
-                                    val joined = !it.isJoined
-                                    it.copy(
-                                        isJoined = joined,
-                                        membersCount = (it.membersCount + if (joined) 1 else -1).coerceAtLeast(0)
-                                    )
-                                } else it
-                            }
-                        }
+                        onToggleJoin = { viewModel.onToggleJoin(group.id) }
                     )
                 }
             }
@@ -178,17 +168,11 @@ fun GroupsScreen(
             onGroupImageUrlChange = { groupImageUrl = it },
             onDismiss = { isCreateGroupOpen = false },
             onCreate = {
-                val newGroup = GroupUiModel(
-                    id = System.currentTimeMillis().toString(),
+                viewModel.createGroup(
                     name = groupName.trim(),
                     description = groupDescription.trim(),
-                    imageUrl = groupImageUrl.trim().ifBlank { DEFAULT_GROUP_IMAGE },
-                    membersCount = 1,
-                    postsCount = 0,
-                    isJoined = true,
-                    admin = currentUser
+                    imageUrl = groupImageUrl.trim().ifBlank { DEFAULT_GROUP_IMAGE }
                 )
-                groups = listOf(newGroup) + groups
                 groupName = ""
                 groupDescription = ""
                 groupImageUrl = ""
@@ -202,7 +186,7 @@ fun GroupsScreen(
 private fun GroupCard(
     group: GroupUiModel,
     onSelect: () -> Unit,
-    onToggleJoin: (GroupUiModel) -> Unit
+    onToggleJoin: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -244,7 +228,7 @@ private fun GroupCard(
                 Spacer(modifier = Modifier.height(16.dp))
                 val joined = group.isJoined
                 Button(
-                    onClick = { onToggleJoin(group) },
+                    onClick = onToggleJoin,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = if (joined) {

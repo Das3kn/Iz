@@ -12,6 +12,7 @@ import com.google.firebase.ktx.Firebase
 import com.das3kn.iz.data.repository.AuthRepository
 import com.das3kn.iz.data.repository.ChatRepository
 import com.das3kn.iz.data.repository.CommentRepository
+import com.das3kn.iz.data.repository.GroupRepository
 import com.das3kn.iz.data.repository.PostRepository
 import com.das3kn.iz.data.repository.SavedPostRepository
 import com.das3kn.iz.data.repository.UserRepository
@@ -81,4 +82,10 @@ object AppModule {
     fun provideUserRepository(
         firestore: FirebaseFirestore
     ): UserRepository = UserRepository(firestore)
+
+    @Provides
+    @Singleton
+    fun provideGroupRepository(
+        firestore: FirebaseFirestore
+    ): GroupRepository = GroupRepository(firestore)
 }

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -35,6 +36,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -43,6 +46,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,11 +61,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.ui.presentation.groups.GroupMockData
+import com.das3kn.iz.ui.presentation.groups.GroupDetailViewModel
 import com.das3kn.iz.ui.presentation.groups.GroupUiModel
 import com.das3kn.iz.ui.presentation.groups.GroupUserUiModel
 import com.das3kn.iz.ui.presentation.home.components.ListItem
@@ -79,149 +86,245 @@ fun GroupsContentScreen(
     groupId: String,
     initialIsJoined: Boolean,
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: GroupDetailViewModel = hiltViewModel()
 ) {
-    val groupDetail = remember(groupId) { GroupMockData.groupDetail(groupId) }
+    val mockDetail = remember(groupId) { GroupMockData.groupDetail(groupId) }
     val currentUser = remember { GroupMockData.currentUser }
 
-    if (groupDetail == null) {
-        LaunchedEffect(Unit) { navController.popBackStack() }
-        Surface(modifier = modifier.fillMaxSize()) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Text(text = "Grup bulunamadı", style = MaterialTheme.typography.bodyLarge)
-            }
-        }
-        return
-    }
-
     var groupState by remember(groupId) {
-        mutableStateOf(groupDetail.group.copy(isJoined = initialIsJoined))
+        mutableStateOf<GroupUiModel?>(mockDetail?.group?.copy(isJoined = initialIsJoined))
     }
     val posts = remember(groupId) {
-        mutableStateListOf<Post>().apply { addAll(groupDetail.posts) }
+        mutableStateListOf<Post>().apply { mockDetail?.posts?.let { addAll(it) } }
     }
+    val members = remember(groupId) { mockDetail?.members.orEmpty() }
     var selectedTab by remember { mutableStateOf(GroupDetailTab.POSTS) }
+
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(groupId) {
+        viewModel.loadGroup(groupId)
+    }
+
+    LaunchedEffect(uiState.group) {
+        uiState.group?.let { updated ->
+            groupState = updated
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearError()
+        }
+    }
 
     // ✅ Küçük app bar + enterAlways (aşağı kaydırınca gizlenir, yukarı kaydırınca görünür)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    Scaffold(
-        topBar = {
-            GroupDetailTopBar(
-                group = groupState,
-                onBack = { navController.popBackStack() },
-                isAdmin = groupState.admin.id == currentUser.id,
-                scrollBehavior = scrollBehavior
-            )
-        },
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF3F4F6))
-                .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 24.dp)
-        ) {
-            item {
-                GroupDetailHeader(
-                    group = groupState,
-                    isJoined = groupState.isJoined,
-                    onToggleJoin = {
-                        val joined = !groupState.isJoined
-                        groupState = groupState.copy(
-                            isJoined = joined,
-                            membersCount = (groupState.membersCount + if (joined) 1 else -1).coerceAtLeast(0)
-                        )
+    val group = groupState
+
+    if (group == null) {
+        GroupDetailPlaceholder(
+            isLoading = uiState.isLoading,
+            errorMessage = uiState.errorMessage,
+            onBack = { navController.popBackStack() }
+        )
+    } else {
+        Scaffold(
+            topBar = {
+                GroupDetailTopBar(
+                    group = group,
+                    onBack = { navController.popBackStack() },
+                    isAdmin = uiState.isAdmin || group.admin.id == currentUser.id,
+                    onOpenSettings = {
+                        navController.navigate("${MainNavTarget.GroupSettingsScreen.route}/${group.id}")
                     },
-                    onCreatePost = { navController.navigate(MainNavTarget.CreatePostScreen.route) }
+                    scrollBehavior = scrollBehavior
                 )
-            }
-
-            item {
-                TabRow(
-                    selectedTabIndex = selectedTab.ordinal,
-                    containerColor = MaterialTheme.colorScheme.surface
-                ) {
-                    GroupDetailTab.values().forEach { tab ->
-                        Tab(
-                            selected = selectedTab == tab,
-                            onClick = { selectedTab = tab },
-                            text = { Text(text = tab.label) }
-                        )
-                    }
-                }
-            }
-
-            when (selectedTab) {
-                GroupDetailTab.POSTS -> {
-                    if (!groupState.isJoined) {
-                        item {
-                            LockedContentMessage(onJoinClick = {
-                                groupState = groupState.copy(
-                                    isJoined = true,
-                                    membersCount = groupState.membersCount + 1
+            },
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF3F4F6))
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(bottom = 24.dp)
+            ) {
+                item {
+                    GroupDetailHeader(
+                        group = group,
+                        isJoined = group.isJoined,
+                        onToggleJoin = {
+                            groupState = groupState?.let { current ->
+                                val joined = !current.isJoined
+                                current.copy(
+                                    isJoined = joined,
+                                    membersCount = (current.membersCount + if (joined) 1 else -1).coerceAtLeast(0)
                                 )
-                            })
-                        }
-                    } else if (posts.isEmpty()) {
-                        item {
-                            EmptyPostsState(onCreatePost = {
-                                navController.navigate(MainNavTarget.CreatePostScreen.route)
-                            })
-                        }
-                    } else {
-                        items(posts, key = { it.id }) { post ->
-                            ListItem(
-                                post = post,
-                                currentUserId = currentUser.id,
-                                onLike = { toggleLike(posts, it.id, currentUser.id) },
-                                onComment = {
-                                    navController.navigate("${MainNavTarget.CommentsScreen.route}/${it.id}")
-                                },
-                                onSave = { toggleSave(posts, it.id, currentUser.id) },
-                                onRepost = { toggleRepost(posts, it.id, currentUser) },
-                                onProfileClick = { userId ->
-                                    if (userId.isNotBlank()) {
-                                        navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surface)
+                            }
+                        },
+                        onCreatePost = { navController.navigate(MainNavTarget.CreatePostScreen.route) }
+                    )
+                }
+
+                item {
+                    TabRow(
+                        selectedTabIndex = selectedTab.ordinal,
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        GroupDetailTab.values().forEach { tab ->
+                            Tab(
+                                selected = selectedTab == tab,
+                                onClick = { selectedTab = tab },
+                                text = { Text(text = tab.label) }
                             )
                         }
                     }
                 }
 
-                GroupDetailTab.MEMBERS -> {
-                    if (!groupState.isJoined) {
-                        item { LockedMembersMessage() }
-                    } else {
-                        items(groupDetail.members, key = { it.id }) { member ->
-                            MemberRow(
-                                member = member,
-                                isAdmin = member.id == groupState.admin.id,
-                                onClick = {
-                                    navController.navigate("${MainNavTarget.ProfileScreen.route}/${member.id}")
+                when (selectedTab) {
+                    GroupDetailTab.POSTS -> {
+                        if (!group.isJoined) {
+                            item {
+                                LockedContentMessage(onJoinClick = {
+                                    groupState = groupState?.let { current ->
+                                        current.copy(
+                                            isJoined = true,
+                                            membersCount = (current.membersCount + 1).coerceAtLeast(1)
+                                        )
+                                    }
+                                })
+                            }
+                        } else if (posts.isEmpty()) {
+                            item {
+                                EmptyPostsState(onCreatePost = {
+                                    navController.navigate(MainNavTarget.CreatePostScreen.route)
+                                })
+                            }
+                        } else {
+                            items(posts, key = { it.id }) { post ->
+                                ListItem(
+                                    post = post,
+                                    currentUserId = currentUser.id,
+                                    onLike = { toggleLike(posts, it.id, currentUser.id) },
+                                    onComment = {
+                                        navController.navigate("${MainNavTarget.CommentsScreen.route}/${it.id}")
+                                    },
+                                    onSave = { toggleSave(posts, it.id, currentUser.id) },
+                                    onRepost = { toggleRepost(posts, it.id, currentUser) },
+                                    onProfileClick = { userId ->
+                                        if (userId.isNotBlank()) {
+                                            navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surface)
+                                )
+                            }
+                        }
+                    }
+
+                    GroupDetailTab.MEMBERS -> {
+                        when {
+                            !group.isJoined -> item { LockedMembersMessage() }
+                            members.isEmpty() -> item { EmptyMembersState() }
+                            else -> {
+                                items(members, key = { it.id }) { member ->
+                                    MemberRow(
+                                        member = member,
+                                        isAdmin = member.id == group.admin.id,
+                                        onClick = {
+                                            navController.navigate("${MainNavTarget.ProfileScreen.route}/${member.id}")
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    GroupDetailTab.ABOUT -> {
+                        item {
+                            AboutSection(
+                                group = group,
+                                onNavigateToAdmin = {
+                                    navController.navigate("${MainNavTarget.ProfileScreen.route}/${group.admin.id}")
                                 }
                             )
                         }
                     }
                 }
+            }
+        }
+    }
 
-                GroupDetailTab.ABOUT -> {
-                    item {
-                        AboutSection(
-                            group = groupState,
-                            onNavigateToAdmin = {
-                                navController.navigate("${MainNavTarget.ProfileScreen.route}/${groupState.admin.id}")
-                            }
-                        )
+}
+
+@Composable
+private fun GroupDetailPlaceholder(
+    isLoading: Boolean,
+    errorMessage: String?,
+    onBack: () -> Unit
+) {
+    val showLoading = isLoading || errorMessage == null
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (showLoading) {
+                CircularProgressIndicator()
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = errorMessage ?: "Grup bulunamadı",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    OutlinedButton(onClick = onBack) {
+                        Text(text = "Geri dön")
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyMembersState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.People,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(32.dp)
+        )
+        Text(
+            text = "Henüz üye yok",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "Üyeler burada görünecek.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -231,6 +334,7 @@ private fun GroupDetailTopBar(
     group: GroupUiModel,
     onBack: () -> Unit,
     isAdmin: Boolean,
+    onOpenSettings: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior
 ) {
     TopAppBar( // 👈 küçük top bar
@@ -251,7 +355,7 @@ private fun GroupDetailTopBar(
         },
         actions = {
             if (isAdmin) {
-                IconButton(onClick = { /* ayarlar */ }) {
+                IconButton(onClick = onOpenSettings) {
                     Icon(imageVector = Icons.Filled.Settings, contentDescription = "Ayarlar")
                 }
             }
@@ -322,7 +426,7 @@ private fun GroupDetailHeader(
             ) {
                 // Avatar — alt-sola
                 AsyncImage(
-                    model = group.imageUrl,
+                    model = group.profileImageUrl,
                     contentDescription = group.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
