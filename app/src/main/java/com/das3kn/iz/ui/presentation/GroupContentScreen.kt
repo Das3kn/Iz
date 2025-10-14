@@ -35,6 +35,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -43,6 +45,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,11 +62,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.das3kn.iz.data.model.Post
 import com.das3kn.iz.ui.presentation.groups.GroupMockData
+import com.das3kn.iz.ui.presentation.groups.GroupDetailViewModel
 import com.das3kn.iz.ui.presentation.groups.GroupUiModel
 import com.das3kn.iz.ui.presentation.groups.GroupUserUiModel
+import com.das3kn.iz.ui.presentation.groups.GroupSettingsDialog
 import com.das3kn.iz.ui.presentation.home.components.ListItem
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
 
@@ -79,7 +85,8 @@ fun GroupsContentScreen(
     groupId: String,
     initialIsJoined: Boolean,
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: GroupDetailViewModel = hiltViewModel()
 ) {
     val groupDetail = remember(groupId) { GroupMockData.groupDetail(groupId) }
     val currentUser = remember { GroupMockData.currentUser }
@@ -102,6 +109,33 @@ fun GroupsContentScreen(
     }
     var selectedTab by remember { mutableStateOf(GroupDetailTab.POSTS) }
 
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(groupId) {
+        viewModel.loadGroup(groupId)
+    }
+
+    LaunchedEffect(uiState.group) {
+        uiState.group?.let { updated ->
+            groupState = updated
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(uiState.navigateBackAfterDelete) {
+        if (uiState.navigateBackAfterDelete) {
+            navController.popBackStack()
+            viewModel.consumeNavigationEvent()
+        }
+    }
+
     // ✅ Küçük app bar + enterAlways (aşağı kaydırınca gizlenir, yukarı kaydırınca görünür)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -110,10 +144,12 @@ fun GroupsContentScreen(
             GroupDetailTopBar(
                 group = groupState,
                 onBack = { navController.popBackStack() },
-                isAdmin = groupState.admin.id == currentUser.id,
+                isAdmin = uiState.isAdmin || groupState.admin.id == currentUser.id,
+                onOpenSettings = { viewModel.openSettings(force = groupState.admin.id == currentUser.id) },
                 scrollBehavior = scrollBehavior
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { innerPadding ->
         LazyColumn(
@@ -223,6 +259,19 @@ fun GroupsContentScreen(
             }
         }
     }
+
+    if (uiState.isSettingsOpen && uiState.group != null) {
+        GroupSettingsDialog(
+            group = uiState.group,
+            members = groupDetail.members,
+            isAdmin = uiState.isAdmin,
+            isSaving = uiState.isSaving,
+            isDeleting = uiState.deleteInProgress,
+            onDismiss = { viewModel.closeSettings() },
+            onSave = { settings -> viewModel.saveSettings(settings) },
+            onDelete = { viewModel.deleteGroup() }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -231,6 +280,7 @@ private fun GroupDetailTopBar(
     group: GroupUiModel,
     onBack: () -> Unit,
     isAdmin: Boolean,
+    onOpenSettings: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior
 ) {
     TopAppBar( // 👈 küçük top bar
@@ -251,7 +301,7 @@ private fun GroupDetailTopBar(
         },
         actions = {
             if (isAdmin) {
-                IconButton(onClick = { /* ayarlar */ }) {
+                IconButton(onClick = onOpenSettings) {
                     Icon(imageVector = Icons.Filled.Settings, contentDescription = "Ayarlar")
                 }
             }

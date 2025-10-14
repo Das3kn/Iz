@@ -19,6 +19,10 @@ data class GroupUiModel(
     val postsCount: Int,
     val isJoined: Boolean,
     val admin: GroupUserUiModel,
+    val isPrivate: Boolean = false,
+    val memberIds: List<String> = emptyList(),
+    val invitedUserIds: List<String> = emptyList(),
+    val pendingMemberIds: List<String> = emptyList(),
 )
 
 data class GroupDetailUiModel(
@@ -81,6 +85,8 @@ object GroupMockData {
             postsCount = 42,
             isJoined = true,
             admin = currentUser,
+            isPrivate = false,
+            memberIds = listOf(currentUser.id, ahmetYilmaz.id, ayseDemir.id, mehmetKaya.id),
         ),
         GroupUiModel(
             id = "designers",
@@ -96,6 +102,9 @@ object GroupMockData {
                 username = "mertyildiz",
                 avatarUrl = "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=400&h=400&fit=crop",
             ),
+            isPrivate = true,
+            memberIds = listOf("7", ayseDemir.id, keremOz.id),
+            invitedUserIds = listOf(currentUser.id),
         ),
         GroupUiModel(
             id = "mobile-dev",
@@ -106,6 +115,7 @@ object GroupMockData {
             postsCount = 56,
             isJoined = true,
             admin = nazliAydin,
+            memberIds = listOf(nazliAydin.id, mehmetKaya.id, currentUser.id),
         ),
         GroupUiModel(
             id = "startup-tr",
@@ -116,6 +126,7 @@ object GroupMockData {
             postsCount = 75,
             isJoined = false,
             admin = keremOz,
+            memberIds = listOf(keremOz.id, ahmetYilmaz.id, currentUser.id),
         ),
     )
 
