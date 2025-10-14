@@ -74,75 +74,6 @@ class GroupDetailViewModel @Inject constructor(
         }
     }
 
-    fun openSettings(force: Boolean = false) {
-        if (_uiState.value.isAdmin || force) {
-            _uiState.update { it.copy(isSettingsOpen = true) }
-        }
-    }
-
-    fun closeSettings() {
-        _uiState.update { it.copy(isSettingsOpen = false) }
-    }
-
-    fun saveSettings(settings: GroupSettingsData) {
-        val groupId = _uiState.value.group?.id ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true, errorMessage = null) }
-            val updates = mapOf(
-                "name" to settings.name,
-                "description" to settings.description,
-                "imageUrl" to settings.imageUrl,
-                "isPrivate" to settings.isPrivate
-            )
-            val result = groupRepository.updateGroup(groupId, updates)
-            if (result.isSuccess) {
-                _uiState.update { state ->
-                    state.copy(
-                        isSaving = false,
-                        isSettingsOpen = false,
-                        group = state.group?.copy(
-                            name = settings.name,
-                            description = settings.description,
-                            imageUrl = settings.imageUrl,
-                            isPrivate = settings.isPrivate
-                        )
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isSaving = false,
-                        errorMessage = result.exceptionOrNull()?.localizedMessage
-                    )
-                }
-            }
-        }
-    }
-
-    fun deleteGroup() {
-        val groupId = _uiState.value.group?.id ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(deleteInProgress = true, errorMessage = null) }
-            val result = groupRepository.deleteGroup(groupId)
-            if (result.isSuccess) {
-                _uiState.update {
-                    it.copy(deleteInProgress = false, navigateBackAfterDelete = true)
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        deleteInProgress = false,
-                        errorMessage = result.exceptionOrNull()?.localizedMessage
-                    )
-                }
-            }
-        }
-    }
-
-    fun consumeNavigationEvent() {
-        _uiState.update { it.copy(navigateBackAfterDelete = false) }
-    }
-
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
@@ -157,17 +88,6 @@ data class GroupDetailUiState(
     val group: GroupUiModel? = null,
     val isAdmin: Boolean = false,
     val isLoading: Boolean = false,
-    val isSaving: Boolean = false,
-    val deleteInProgress: Boolean = false,
-    val isSettingsOpen: Boolean = false,
     val errorMessage: String? = null,
-    val navigateBackAfterDelete: Boolean = false,
     val observedGroupId: String? = null
-)
-
-data class GroupSettingsData(
-    val name: String,
-    val description: String,
-    val imageUrl: String,
-    val isPrivate: Boolean
 )

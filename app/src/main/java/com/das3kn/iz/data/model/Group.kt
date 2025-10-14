@@ -11,6 +11,7 @@ data class Group(
     val name: String = "",
     val description: String = "",
     val imageUrl: String = "",
+    val profileImageUrl: String = "",
     val adminId: String = "",
     val adminName: String = "",
     val adminUsername: String = "",

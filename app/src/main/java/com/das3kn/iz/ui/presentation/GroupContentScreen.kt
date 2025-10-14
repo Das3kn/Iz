@@ -71,7 +71,6 @@ import com.das3kn.iz.ui.presentation.groups.GroupMockData
 import com.das3kn.iz.ui.presentation.groups.GroupDetailViewModel
 import com.das3kn.iz.ui.presentation.groups.GroupUiModel
 import com.das3kn.iz.ui.presentation.groups.GroupUserUiModel
-import com.das3kn.iz.ui.presentation.groups.GroupSettingsDialog
 import com.das3kn.iz.ui.presentation.home.components.ListItem
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
 
@@ -122,13 +121,6 @@ fun GroupsContentScreen(
         }
     }
 
-    LaunchedEffect(uiState.navigateBackAfterDelete) {
-        if (uiState.navigateBackAfterDelete) {
-            navController.popBackStack()
-            viewModel.consumeNavigationEvent()
-        }
-    }
-
     // ✅ Küçük app bar + enterAlways (aşağı kaydırınca gizlenir, yukarı kaydırınca görünür)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -147,7 +139,9 @@ fun GroupsContentScreen(
                     group = group,
                     onBack = { navController.popBackStack() },
                     isAdmin = uiState.isAdmin || group.admin.id == currentUser.id,
-                    onOpenSettings = { viewModel.openSettings(force = group.admin.id == currentUser.id) },
+                    onOpenSettings = {
+                        navController.navigate("${MainNavTarget.GroupSettingsScreen.route}/${group.id}")
+                    },
                     scrollBehavior = scrollBehavior
                 )
             },
@@ -269,19 +263,6 @@ fun GroupsContentScreen(
         }
     }
 
-    val settingsGroup = uiState.group
-    if (uiState.isSettingsOpen && settingsGroup != null) {
-        GroupSettingsDialog(
-            group = settingsGroup,
-            members = members,
-            isAdmin = uiState.isAdmin,
-            isSaving = uiState.isSaving,
-            isDeleting = uiState.deleteInProgress,
-            onDismiss = { viewModel.closeSettings() },
-            onSave = { settings -> viewModel.saveSettings(settings) },
-            onDelete = { viewModel.deleteGroup() }
-        )
-    }
 }
 
 @Composable
@@ -445,7 +426,7 @@ private fun GroupDetailHeader(
             ) {
                 // Avatar — alt-sola
                 AsyncImage(
-                    model = group.imageUrl,
+                    model = group.profileImageUrl,
                     contentDescription = group.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

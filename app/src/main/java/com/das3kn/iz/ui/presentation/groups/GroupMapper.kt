@@ -11,6 +11,7 @@ fun Group.toUiModel(currentUserId: String?): GroupUiModel {
         name = name,
         description = description,
         imageUrl = imageUrl,
+        profileImageUrl = profileImageUrl.ifBlank { imageUrl },
         membersCount = if (membersCount > 0) membersCount else memberIds.size,
         postsCount = postsCount,
         isJoined = isMember,

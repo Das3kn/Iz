@@ -99,6 +99,7 @@ class GroupsViewModel @Inject constructor(
                 name = name,
                 description = description,
                 imageUrl = imageUrl,
+                profileImageUrl = imageUrl,
                 adminId = currentUser.uid,
                 adminName = currentUser.displayName ?: username,
                 adminUsername = username,
