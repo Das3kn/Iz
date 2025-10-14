@@ -5,15 +5,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldColors
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,13 +49,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,180 +72,194 @@ fun LoginScreen(
     onNavigateToSignUp: () -> Unit,
     onForgotPassword: () -> Unit,
     isLoading: Boolean,
-    errorMessage: String?
+    errorMessage: String?,
 ) {
     var showPassword by rememberSaveable { mutableStateOf(false) }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White)
+            .padding(horizontal = 24.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AuthHeader(
-                title = "Hoş Geldiniz",
-                subtitle = "Hesabınıza giriş yapın",
-                icon = "💬"
-            )
-
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize(),
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                tonalElevation = 2.dp,
-                shadowElevation = 6.dp
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 32.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(32.dp)
+                        .size(80.dp)
+                        .background(
+                            brush = Brush.linearGradient(listOf(PrimaryPurple, AccentCyan)),
+                            shape = RoundedCornerShape(28.dp)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = onEmailChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(text = "E-posta") },
-                            placeholder = { Text(text = "ornek@email.com") },
-                            singleLine = true,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Email,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
+                    Text(text = "💬", fontSize = 32.sp)
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Hoş Geldiniz",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Hesabınıza giriş yapın",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                FormLabel(text = "E-posta")
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = onEmailChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(text = "ornek@email.com", color = PlaceholderGray) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Email,
+                            contentDescription = null
                         )
+                    },
+                    colors = textFieldColors()
+                )
 
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = onPasswordChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(text = "Şifre") },
-                            placeholder = { Text(text = "••••••••") },
-                            singleLine = true,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Lock,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                IconButton(onClick = { showPassword = !showPassword }) {
-                                    Icon(
-                                        imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                        contentDescription = if (showPassword) "Şifreyi gizle" else "Şifreyi göster"
-                                    )
-                                }
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
+                FormLabel(text = "Şifre")
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = onPasswordChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(text = "••••••••", color = PlaceholderGray) },
+                    singleLine = true,
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(16.dp),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = null
                         )
-
-                        TextButton(
-                            onClick = onForgotPassword,
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text(
-                                text = "Şifremi Unuttum",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyMedium
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { showPassword = !showPassword }) {
+                            Icon(
+                                imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = if (showPassword) "Şifreyi gizle" else "Şifreyi göster"
                             )
                         }
+                    },
+                    colors = textFieldColors()
+                )
 
-                        if (!errorMessage.isNullOrBlank()) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(
-                                    text = errorMessage,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(12.dp)
-                                )
-                            }
-                        }
-                    }
+                TextButton(onClick = onForgotPassword) {
+                    Text(
+                        text = "Şifremi Unuttum",
+                        color = PrimaryPurple,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Button(
-                            onClick = onLogin,
-                            enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text(
-                                    text = "Giriş Yap",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Divider(
-                                modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            )
-                            Text(
-                                text = "veya",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Divider(
-                                modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = onNavigateToSignUp,
-                            enabled = !isLoading,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            ),
-                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text(
-                                text = "Hesap Oluştur",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+                if (!errorMessage.isNullOrBlank()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(12.dp)
+                        )
                     }
                 }
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Button(
+                onClick = onLogin,
+                enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryPurple,
+                    contentColor = Color.White,
+                    disabledContainerColor = PrimaryPurple.copy(alpha = 0.4f),
+                    disabledContentColor = Color.White.copy(alpha = 0.8f)
+                ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Giriş Yap",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    color = DividerGray
+                )
+                Text(
+                    text = "veya",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextLightGray
+                )
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    color = DividerGray
+                )
+            }
+
+            OutlinedButton(
+                onClick = onNavigateToSignUp,
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryPurple),
+                border = BorderStroke(2.dp, PrimaryPurple),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp)
+            ) {
+                Text(
+                    text = "Hesap Oluştur",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -253,7 +270,7 @@ fun SignUpScreen(
     onSignUp: (name: String, username: String, email: String, password: String) -> Unit,
     onBack: () -> Unit,
     isLoading: Boolean,
-    errorMessage: String?
+    errorMessage: String?,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var username by rememberSaveable { mutableStateOf("") }
@@ -266,285 +283,249 @@ fun SignUpScreen(
         Regex("[^a-z0-9_]")
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White)
+            .padding(horizontal = 24.dp, vertical = 24.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AuthHeader(
-                title = "Hesap Oluştur",
-                subtitle = "Topluluğumuza katılın",
-                icon = "🚀",
-                onBack = onBack
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Geri",
+                    tint = TextGray
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Hesap Oluştur",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Topluluğumuza katılın",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextGray,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            FormLabel(text = "Ad Soyad")
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "Adınız ve soyadınız", color = PlaceholderGray) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Person,
+                        contentDescription = null
+                    )
+                },
+                colors = textFieldColors()
             )
 
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                tonalElevation = 2.dp,
-                shadowElevation = 6.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 32.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(28.dp)
+            FormLabel(text = "Kullanıcı Adı")
+            OutlinedTextField(
+                value = username,
+                onValueChange = {
+                    val sanitized = it.lowercase(Locale.getDefault()).replace(usernameFormatter, "")
+                    username = sanitized
+                },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "@kullaniciadi", color = PlaceholderGray) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.AlternateEmail,
+                        contentDescription = null
+                    )
+                },
+                colors = textFieldColors()
+            )
+            if (username.isNotBlank()) {
+                Text(
+                    text = "@" + username,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextLightGray
+                )
+            }
+
+            FormLabel(text = "E-posta")
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "ornek@email.com", color = PlaceholderGray) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Email,
+                        contentDescription = null
+                    )
+                },
+                colors = textFieldColors()
+            )
+
+            FormLabel(text = "Şifre")
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "En az 8 karakter", color = PlaceholderGray) },
+                singleLine = true,
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                shape = RoundedCornerShape(16.dp),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = null
+                    )
+                },
+                trailingIcon = {
+                    IconButton(onClick = { showPassword = !showPassword }) {
+                        Icon(
+                            imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = if (showPassword) "Şifreyi gizle" else "Şifreyi göster"
+                        )
+                    }
+                },
+                colors = textFieldColors()
+            )
+            if (password.isNotEmpty() && password.length < 8) {
+                Text(
+                    text = "Şifre en az 8 karakter olmalıdır",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.Top) {
+                Checkbox(
+                    checked = acceptedTerms,
+                    onCheckedChange = { acceptedTerms = it },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = PrimaryPurple,
+                        checkmarkColor = Color.White
+                    )
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(SpanStyle(color = PrimaryPurple, fontWeight = FontWeight.SemiBold)) {
+                            append("Kullanım Koşulları")
+                        }
+                        append(" ve ")
+                        withStyle(SpanStyle(color = PrimaryPurple, fontWeight = FontWeight.SemiBold)) {
+                            append("Gizlilik Politikası")
+                        }
+                        append("'nı kabul ediyorum")
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextGray
+                )
+            }
+
+            if (!errorMessage.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(text = "Ad Soyad") },
-                            placeholder = { Text(text = "Adınız ve soyadınız") },
-                            singleLine = true,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-
-                        OutlinedTextField(
-                            value = username,
-                            onValueChange = {
-                                val sanitized = it.lowercase(Locale.getDefault()).replace(usernameFormatter, "")
-                                username = sanitized
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(text = "Kullanıcı Adı") },
-                            placeholder = { Text(text = "@kullaniciadi") },
-                            singleLine = true,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.AlternateEmail,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        if (username.isNotBlank()) {
-                            Text(
-                                text = "@$username",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(text = "E-posta") },
-                            placeholder = { Text(text = "ornek@email.com") },
-                            singleLine = true,
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Email,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(text = "Şifre") },
-                            placeholder = { Text(text = "En az 8 karakter") },
-                            singleLine = true,
-                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Lock,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { showPassword = !showPassword }) {
-                                    Icon(
-                                        imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                        contentDescription = if (showPassword) "Şifreyi gizle" else "Şifreyi göster"
-                                    )
-                                }
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        if (password.isNotEmpty() && password.length < 8) {
-                            Text(
-                                text = "Şifre en az 8 karakter olmalıdır",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Row(verticalAlignment = Alignment.Top) {
-                            Checkbox(
-                                checked = acceptedTerms,
-                                onCheckedChange = { acceptedTerms = it },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = MaterialTheme.colorScheme.primary,
-                                    checkmarkColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = buildAnnotatedString {
-                                    append("Devam ederek ")
-                                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
-                                        append("Kullanım Koşulları")
-                                    }
-                                    append(" ve ")
-                                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
-                                        append("Gizlilik Politikası")
-                                    }
-                                    append("'nı kabul etmiş olursunuz.")
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        if (!errorMessage.isNullOrBlank()) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(
-                                    text = errorMessage,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(12.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Button(
-                        onClick = { onSignUp(name.trim(), username.trim(), email.trim(), password) },
-                        enabled = name.isNotBlank() && username.isNotBlank() && email.isNotBlank() && password.length >= 8 && acceptedTerms && !isLoading,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                text = "Hesap Oluştur",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(12.dp)
+                    )
                 }
+            }
+        }
+
+        Button(
+            onClick = { onSignUp(name.trim(), username.trim(), email.trim(), password) },
+            enabled = name.isNotBlank() && username.isNotBlank() && email.isNotBlank() && password.length >= 8 && acceptedTerms && !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(999.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = PrimaryPurple,
+                contentColor = Color.White,
+                disabledContainerColor = PrimaryPurple.copy(alpha = 0.4f),
+                disabledContentColor = Color.White.copy(alpha = 0.8f)
+            ),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp)
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = "Hesap Oluştur",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AuthHeader(
-    title: String,
-    subtitle: String,
-    icon: String,
-    onBack: (() -> Unit)? = null
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                        MaterialTheme.colorScheme.secondary
-                    )
-                )
-            )
-            .padding(horizontal = 24.dp, vertical = 32.dp)
-    ) {
-        onBack?.let { back ->
-            Surface(
-                modifier = Modifier.align(Alignment.TopStart),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
-            ) {
-                IconButton(onClick = back) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Geri",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(top = if (onBack != null) 24.dp else 0.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = icon, fontSize = 32.sp)
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
-                )
-            }
-        }
-    }
+private fun FormLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = TextGray,
+        fontWeight = FontWeight.Medium
+    )
 }
+
+private fun textFieldColors(): OutlinedTextFieldColors = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = PrimaryPurple,
+    unfocusedBorderColor = DividerGray,
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+    cursorColor = PrimaryPurple,
+    focusedLeadingIconColor = PrimaryPurple,
+    unfocusedLeadingIconColor = TextLightGray,
+    focusedTrailingIconColor = TextGray,
+    unfocusedTrailingIconColor = TextLightGray,
+    focusedPlaceholderColor = PlaceholderGray,
+    unfocusedPlaceholderColor = PlaceholderGray
+)
+
+private val PrimaryPurple = Color(0xFF9333EA)
+private val AccentCyan = Color(0xFF06B6D4)
+private val TextGray = Color(0xFF4B5563)
+private val TextLightGray = Color(0xFF9CA3AF)
+private val PlaceholderGray = Color(0xFF9CA3AF)
+private val DividerGray = Color(0xFFE5E7EB)
