@@ -22,9 +22,13 @@ import com.das3kn.iz.ui.presentation.posts.CreatePostScreen
 import com.das3kn.iz.ui.presentation.posts.PostDetailScreen
 import com.das3kn.iz.ui.presentation.saved.SavedPostsScreen
 import com.das3kn.iz.ui.presentation.notifications.NotificationsScreen
+import com.das3kn.iz.ui.presentation.auth.AuthViewModel
 
 @Composable
-fun MainNavigation(modifier: Modifier = Modifier) {
+fun MainNavigation(
+    modifier: Modifier = Modifier,
+    authViewModel: AuthViewModel
+) {
     val navController = rememberNavController()
     NavHost(
         startDestination = MainNavTarget.HomeScreen.route,
@@ -32,7 +36,8 @@ fun MainNavigation(modifier: Modifier = Modifier) {
     ){
         composable(MainNavTarget.HomeScreen.route){
             HomeScreen(
-                navController = navController
+                navController = navController,
+                authViewModel = authViewModel
             )
         }
         composable(MainNavTarget.GroupsScreen.route){
@@ -128,10 +133,11 @@ fun MainNavigation(modifier: Modifier = Modifier) {
         
         composable(MainNavTarget.CreatePostScreen.route) {
             CreatePostScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                authViewModel = authViewModel
             )
         }
-        
+
         composable(
             route = "${MainNavTarget.PostDetailScreen.route}/{postId}",
             arguments = listOf(
@@ -141,7 +147,8 @@ fun MainNavigation(modifier: Modifier = Modifier) {
             val postId = backStackEntry.arguments?.getString("postId") ?: ""
             PostDetailScreen(
                 postId = postId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                authViewModel = authViewModel
             )
         }
 
@@ -159,13 +166,15 @@ fun MainNavigation(modifier: Modifier = Modifier) {
                     if (userId.isNotBlank()) {
                         navController.navigate("${MainNavTarget.ProfileScreen.route}/$userId")
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
-        
+
         composable(MainNavTarget.SavedPostsScreen.route) {
             SavedPostsScreen(
-                navController = navController
+                navController = navController,
+                authViewModel = authViewModel
             )
         }
         

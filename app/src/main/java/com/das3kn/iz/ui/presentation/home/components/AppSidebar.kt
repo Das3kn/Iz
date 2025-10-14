@@ -53,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import coil.compose.AsyncImage
 import com.das3kn.iz.data.model.User
-import com.das3kn.iz.ui.theme.components.LoginCard
 import com.google.firebase.auth.FirebaseUser
 
 /**
@@ -162,26 +161,19 @@ fun AppSidebar(
             .verticalScroll(rememberScrollState())
             .padding(vertical = 24.dp),
     ) {
-        if (currentUser == null && userProfile == null) {
-            LoginCard(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp)
-                    .fillMaxWidth()
-            )
-        } else {
-            SidebarProfileSection(
-                displayName = displayName ?: "Kullanıcı",
-                username = username,
-                avatarUrl = avatarUrl,
-                followers = followersCount,
-                following = followingCount,
-                isLoading = isLoadingProfile,
-                onProfileClick = {
-                    onNavigate(SidebarDestination.Profile)
-                    onClose()
-                }
-            )
-        }
+        SidebarProfileSection(
+            displayName = displayName ?: "Kullanıcı",
+            username = username,
+            avatarUrl = avatarUrl,
+            followers = followersCount,
+            following = followingCount,
+            isLoading = isLoadingProfile,
+            isEnabled = currentUser != null || userProfile != null,
+            onProfileClick = {
+                onNavigate(SidebarDestination.Profile)
+                onClose()
+            }
+        )
 
         Divider(
             modifier = Modifier
@@ -244,6 +236,7 @@ private fun SidebarProfileSection(
     followers: Int,
     following: Int,
     isLoading: Boolean,
+    isEnabled: Boolean = true,
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -256,7 +249,7 @@ private fun SidebarProfileSection(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
-                .clickable(enabled = !isLoading) { onProfileClick() }
+                .clickable(enabled = !isLoading && isEnabled) { onProfileClick() }
                 .padding(12.dp)
         ) {
             SidebarAvatar(
