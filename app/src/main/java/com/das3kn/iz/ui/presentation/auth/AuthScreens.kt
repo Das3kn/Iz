@@ -81,7 +81,7 @@ fun LoginScreen(
             .fillMaxSize()
             .background(Color.White)
             .padding(horizontal = 24.dp, vertical = 32.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.SpaceAround,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
