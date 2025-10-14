@@ -36,11 +36,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldColors
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -509,7 +509,8 @@ private fun FormLabel(text: String) {
     )
 }
 
-private fun textFieldColors(): OutlinedTextFieldColors = OutlinedTextFieldDefaults.colors(
+@Composable
+private fun textFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = PrimaryPurple,
     unfocusedBorderColor = DividerGray,
     focusedContainerColor = Color.White,
