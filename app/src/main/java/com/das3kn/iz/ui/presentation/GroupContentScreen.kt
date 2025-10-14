@@ -260,9 +260,10 @@ fun GroupsContentScreen(
         }
     }
 
-    if (uiState.isSettingsOpen && uiState.group != null) {
+    val settingsGroup = uiState.group
+    if (uiState.isSettingsOpen && settingsGroup != null) {
         GroupSettingsDialog(
-            group = uiState.group,
+            group = settingsGroup,
             members = groupDetail.members,
             isAdmin = uiState.isAdmin,
             isSaving = uiState.isSaving,

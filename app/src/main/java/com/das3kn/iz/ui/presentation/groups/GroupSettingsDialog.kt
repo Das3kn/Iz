@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -20,8 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Globe
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
@@ -334,7 +335,7 @@ private fun PrivacySection(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                val icon = if (isPrivate) Icons.Filled.Lock else Icons.Filled.Globe
+                val icon = if (isPrivate) Icons.Filled.Lock else Icons.Filled.Public
                 val description = if (isPrivate) {
                     "Sadece üyeler içeriği görebilir"
                 } else {

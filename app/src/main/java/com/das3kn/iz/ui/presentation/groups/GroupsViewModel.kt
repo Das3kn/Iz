@@ -35,10 +35,11 @@ class GroupsViewModel @Inject constructor(
             val result = groupRepository.getGroups()
             if (result.isSuccess) {
                 val groups = result.getOrNull().orEmpty()
+                val userId = currentUserId
                 val visibleGroups = groups
-                    .map { it.toUiModel(currentUserId) }
+                    .map { it.toUiModel(userId) }
                     .filter { group ->
-                        !group.isPrivate || (currentUserId != null && isGroupVisibleToUser(group, currentUserId))
+                        !group.isPrivate || (userId != null && isGroupVisibleToUser(group, userId))
                     }
                 _uiState.update {
                     it.copy(
