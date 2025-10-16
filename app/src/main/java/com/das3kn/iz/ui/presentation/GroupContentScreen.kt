@@ -66,6 +66,7 @@ import com.das3kn.iz.ui.presentation.groups.GroupUiModel
 import com.das3kn.iz.ui.presentation.groups.GroupUserUiModel
 import com.das3kn.iz.ui.presentation.home.components.ListItem
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private enum class GroupDetailTab(val label: String) {
     POSTS("Paylaşımlar"),
@@ -73,6 +74,7 @@ private enum class GroupDetailTab(val label: String) {
     ABOUT("Hakkında")
 }
 
+@Suppress("UNUSED_PARAMETER")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupsContentScreen(
@@ -81,11 +83,16 @@ fun GroupsContentScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    val groupDetail = remember(groupId) { GroupMockData.groupDetail(groupId) }
     val currentUser = remember { GroupMockData.currentUser }
+    val groupDetailState by GroupMockData.groupDetailFlow(groupId)
+        .collectAsStateWithLifecycle(initialValue = GroupMockData.groupDetail(groupId))
 
-    if (groupDetail == null) {
-        LaunchedEffect(Unit) { navController.popBackStack() }
+    val detail = groupDetailState
+
+    if (detail == null) {
+        LaunchedEffect(groupId) {
+            navController.popBackStack(MainNavTarget.GroupsScreen.route, false)
+        }
         Surface(modifier = modifier.fillMaxSize()) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Text(text = "Grup bulunamadı", style = MaterialTheme.typography.bodyLarge)
@@ -94,11 +101,9 @@ fun GroupsContentScreen(
         return
     }
 
-    var groupState by remember(groupId) {
-        mutableStateOf(groupDetail.group.copy(isJoined = initialIsJoined))
-    }
+    val group = detail.group
     val posts = remember(groupId) {
-        mutableStateListOf<Post>().apply { addAll(groupDetail.posts) }
+        mutableStateListOf<Post>().apply { addAll(detail.posts) }
     }
     var selectedTab by remember { mutableStateOf(GroupDetailTab.POSTS) }
 
@@ -108,9 +113,12 @@ fun GroupsContentScreen(
     Scaffold(
         topBar = {
             GroupDetailTopBar(
-                group = groupState,
+                group = group,
                 onBack = { navController.popBackStack() },
-                isAdmin = groupState.admin.id == currentUser.id,
+                isAdmin = group.admin.id == currentUser.id,
+                onOpenSettings = {
+                    navController.navigate("${MainNavTarget.GroupSettingsScreen.route}/${group.id}")
+                },
                 scrollBehavior = scrollBehavior
             )
         },
@@ -125,15 +133,9 @@ fun GroupsContentScreen(
         ) {
             item {
                 GroupDetailHeader(
-                    group = groupState,
-                    isJoined = groupState.isJoined,
-                    onToggleJoin = {
-                        val joined = !groupState.isJoined
-                        groupState = groupState.copy(
-                            isJoined = joined,
-                            membersCount = (groupState.membersCount + if (joined) 1 else -1).coerceAtLeast(0)
-                        )
-                    },
+                    group = group,
+                    isJoined = group.isJoined,
+                    onToggleJoin = { GroupMockData.toggleJoin(group.id) },
                     onCreatePost = { navController.navigate(MainNavTarget.CreatePostScreen.route) }
                 )
             }
@@ -155,13 +157,10 @@ fun GroupsContentScreen(
 
             when (selectedTab) {
                 GroupDetailTab.POSTS -> {
-                    if (!groupState.isJoined) {
+                    if (!group.isJoined) {
                         item {
                             LockedContentMessage(onJoinClick = {
-                                groupState = groupState.copy(
-                                    isJoined = true,
-                                    membersCount = groupState.membersCount + 1
-                                )
+                                GroupMockData.toggleJoin(group.id)
                             })
                         }
                     } else if (posts.isEmpty()) {
@@ -195,13 +194,13 @@ fun GroupsContentScreen(
                 }
 
                 GroupDetailTab.MEMBERS -> {
-                    if (!groupState.isJoined) {
+                    if (!group.isJoined) {
                         item { LockedMembersMessage() }
                     } else {
-                        items(groupDetail.members, key = { it.id }) { member ->
+                        items(detail.members, key = { it.id }) { member ->
                             MemberRow(
                                 member = member,
-                                isAdmin = member.id == groupState.admin.id,
+                                isAdmin = member.id == group.admin.id,
                                 onClick = {
                                     navController.navigate("${MainNavTarget.ProfileScreen.route}/${member.id}")
                                 }
@@ -213,9 +212,9 @@ fun GroupsContentScreen(
                 GroupDetailTab.ABOUT -> {
                     item {
                         AboutSection(
-                            group = groupState,
+                            group = group,
                             onNavigateToAdmin = {
-                                navController.navigate("${MainNavTarget.ProfileScreen.route}/${groupState.admin.id}")
+                                navController.navigate("${MainNavTarget.ProfileScreen.route}/${group.admin.id}")
                             }
                         )
                     }
@@ -231,6 +230,7 @@ private fun GroupDetailTopBar(
     group: GroupUiModel,
     onBack: () -> Unit,
     isAdmin: Boolean,
+    onOpenSettings: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior
 ) {
     TopAppBar( // 👈 küçük top bar
@@ -251,7 +251,7 @@ private fun GroupDetailTopBar(
         },
         actions = {
             if (isAdmin) {
-                IconButton(onClick = { /* ayarlar */ }) {
+                IconButton(onClick = onOpenSettings) {
                     Icon(imageVector = Icons.Filled.Settings, contentDescription = "Ayarlar")
                 }
             }
@@ -322,7 +322,7 @@ private fun GroupDetailHeader(
             ) {
                 // Avatar — alt-sola
                 AsyncImage(
-                    model = group.imageUrl,
+                    model = group.avatarUrl,
                     contentDescription = group.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

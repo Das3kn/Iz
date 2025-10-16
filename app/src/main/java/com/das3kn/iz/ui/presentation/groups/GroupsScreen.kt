@@ -59,6 +59,7 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.das3kn.iz.R
 import com.das3kn.iz.ui.presentation.navigation.MainNavTarget
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +69,7 @@ fun GroupsScreen(
 ) {
     val currentUser = remember { GroupMockData.currentUser }
 
-    var groups by remember { mutableStateOf(GroupMockData.initialGroups()) }
+    val groups by GroupMockData.groupsFlow().collectAsStateWithLifecycle(initialValue = GroupMockData.initialGroups())
     var isCreateGroupOpen by remember { mutableStateOf(false) }
     var groupName by remember { mutableStateOf("") }
     var groupDescription by remember { mutableStateOf("") }
@@ -152,15 +153,7 @@ fun GroupsScreen(
                             navController.navigate("${MainNavTarget.GroupContentScreen.route}/${group.id}/${group.isJoined}")
                         },
                         onToggleJoin = { toggledGroup ->
-                            groups = groups.map {
-                                if (it.id == toggledGroup.id) {
-                                    val joined = !it.isJoined
-                                    it.copy(
-                                        isJoined = joined,
-                                        membersCount = (it.membersCount + if (joined) 1 else -1).coerceAtLeast(0)
-                                    )
-                                } else it
-                            }
+                            GroupMockData.toggleJoin(toggledGroup.id)
                         }
                     )
                 }
@@ -178,17 +171,20 @@ fun GroupsScreen(
             onGroupImageUrlChange = { groupImageUrl = it },
             onDismiss = { isCreateGroupOpen = false },
             onCreate = {
+                val newGroupImage = groupImageUrl.trim().ifBlank { DEFAULT_GROUP_IMAGE }
                 val newGroup = GroupUiModel(
                     id = System.currentTimeMillis().toString(),
                     name = groupName.trim(),
                     description = groupDescription.trim(),
-                    imageUrl = groupImageUrl.trim().ifBlank { DEFAULT_GROUP_IMAGE },
+                    imageUrl = newGroupImage,
+                    avatarUrl = newGroupImage,
                     membersCount = 1,
                     postsCount = 0,
                     isJoined = true,
+                    isPrivate = false,
                     admin = currentUser
                 )
-                groups = listOf(newGroup) + groups
+                GroupMockData.createGroup(newGroup)
                 groupName = ""
                 groupDescription = ""
                 groupImageUrl = ""
