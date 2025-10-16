@@ -47,7 +47,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -561,15 +561,46 @@ private fun SettingsTextField(
             enabled = enabled,
             singleLine = singleLine,
             minLines = minLines,
-            placeholder = { Text(text = placeholder) },
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = SettingsPlaceholderGray,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
             modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                cursorColor = MaterialTheme.colorScheme.primary
+            shape = RoundedCornerShape(16.dp),
+            textStyle = MaterialTheme.typography.bodyMedium,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = SettingsPrimaryPurple,
+                unfocusedBorderColor = SettingsDividerGray,
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                cursorColor = SettingsPrimaryPurple,
+                focusedPlaceholderColor = SettingsPlaceholderGray,
+                unfocusedPlaceholderColor = SettingsPlaceholderGray,
+                disabledBorderColor = SettingsDividerGray,
+                disabledContainerColor = Color.White,
+                disabledPlaceholderColor = SettingsPlaceholderGray.copy(alpha = 0.6f),
+                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledLeadingIconColor = SettingsPlaceholderGray.copy(alpha = 0.6f),
+                disabledTrailingIconColor = SettingsPlaceholderGray.copy(alpha = 0.6f),
+                focusedLeadingIconColor = SettingsPrimaryPurple,
+                unfocusedLeadingIconColor = SettingsTextLightGray,
+                focusedTrailingIconColor = SettingsTextGray,
+                unfocusedTrailingIconColor = SettingsTextLightGray
             )
         )
     }
 }
+
+private val SettingsPrimaryPurple = Color(0xFF9333EA)
+private val SettingsDividerGray = Color(0xFFE5E7EB)
+private val SettingsPlaceholderGray = Color(0xFF9CA3AF)
+private val SettingsTextGray = Color(0xFF4B5563)
+private val SettingsTextLightGray = Color(0xFF9CA3AF)
 
 @Composable
 private fun AdminCandidateRow(
