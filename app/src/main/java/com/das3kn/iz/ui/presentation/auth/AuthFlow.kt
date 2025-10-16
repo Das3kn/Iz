@@ -1,8 +1,5 @@
 package com.das3kn.iz.ui.presentation.auth
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -10,8 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.das3kn.iz.ui.presentation.navigation.MainNavigation
 
@@ -24,6 +19,7 @@ fun AuthFlow() {
 
     var loginEmail by rememberSaveable(uiState.savedEmail) { mutableStateOf(uiState.savedEmail) }
     var loginPassword by rememberSaveable(uiState.savedPassword) { mutableStateOf(uiState.savedPassword) }
+    var showSplash by rememberSaveable { mutableStateOf(uiState.isLoading) }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
@@ -31,16 +27,19 @@ fun AuthFlow() {
         }
     }
 
-    when {
-        uiState.isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+    LaunchedEffect(uiState.isLoading) {
+        if (uiState.isLoading) {
+            showSplash = true
         }
+    }
 
+    when {
+        showSplash -> {
+            SocialHubSplashScreen(
+                isLoading = uiState.isLoading,
+                onFinished = { showSplash = false }
+            )
+        }
         currentUser != null -> {
             MainNavigation(authViewModel = authViewModel)
         }
