@@ -15,6 +15,7 @@ import com.das3kn.iz.ui.presentation.chat.ChatListScreen
 import com.das3kn.iz.ui.presentation.chat.ChatScreen
 import com.das3kn.iz.ui.presentation.chat.NewChatScreen
 import com.das3kn.iz.ui.presentation.comments.CommentsScreen
+import com.das3kn.iz.ui.presentation.groups.GroupSettingsScreen
 import com.das3kn.iz.ui.presentation.groups.GroupsScreen
 import com.das3kn.iz.ui.presentation.home.HomeScreen
 import com.das3kn.iz.ui.presentation.people.PeopleScreen
@@ -74,6 +75,18 @@ fun MainNavigation(
             GroupsContentScreen(
                 groupId = groupId,
                 initialIsJoined = isJoined,
+                navController = navController
+            )
+        }
+        composable(
+            route = "${MainNavTarget.GroupSettingsScreen.route}/{groupId}",
+            arguments = listOf(
+                navArgument("groupId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+            GroupSettingsScreen(
+                groupId = groupId,
                 navController = navController
             )
         }
@@ -187,6 +200,7 @@ enum class MainNavTarget(val route: String){
     ProfileScreen("profile_screen"),
     GroupsScreen("groups_screen"),
     GroupContentScreen("group_content_screen"),
+    GroupSettingsScreen("group_settings_screen"),
     PeopleScreen("people_screen"),
     BlogsScreen("blogs_screen"),
     BlogContent("blog_content"),

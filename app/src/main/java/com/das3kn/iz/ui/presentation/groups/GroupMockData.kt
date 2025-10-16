@@ -2,6 +2,12 @@ package com.das3kn.iz.ui.presentation.groups
 
 import com.das3kn.iz.data.model.MediaType
 import com.das3kn.iz.data.model.Post
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 
 data class GroupUserUiModel(
     val id: String,
@@ -18,6 +24,7 @@ data class GroupUiModel(
     val membersCount: Int,
     val postsCount: Int,
     val isJoined: Boolean,
+    val isPrivate: Boolean,
     val admin: GroupUserUiModel,
 )
 
@@ -71,7 +78,7 @@ object GroupMockData {
         avatarUrl = "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=400&h=400&fit=crop",
     )
 
-    private val groups = listOf(
+    private val initialGroups = listOf(
         GroupUiModel(
             id = "tech-ai",
             name = "Yapay Zeka Tutkunları",
@@ -80,6 +87,7 @@ object GroupMockData {
             membersCount = 128,
             postsCount = 42,
             isJoined = true,
+            isPrivate = false,
             admin = currentUser,
         ),
         GroupUiModel(
@@ -90,6 +98,7 @@ object GroupMockData {
             membersCount = 86,
             postsCount = 28,
             isJoined = false,
+            isPrivate = true,
             admin = GroupUserUiModel(
                 id = "7",
                 name = "Mert Yıldız",
@@ -105,6 +114,7 @@ object GroupMockData {
             membersCount = 210,
             postsCount = 56,
             isJoined = true,
+            isPrivate = false,
             admin = nazliAydin,
         ),
         GroupUiModel(
@@ -115,18 +125,19 @@ object GroupMockData {
             membersCount = 340,
             postsCount = 75,
             isJoined = false,
+            isPrivate = true,
             admin = keremOz,
         ),
     )
 
-    private val groupMembers: Map<String, List<GroupUserUiModel>> = mapOf(
+    private val groupMembers: MutableMap<String, List<GroupUserUiModel>> = mutableMapOf(
         "tech-ai" to listOf(ahmetYilmaz, ayseDemir, mehmetKaya, currentUser),
         "designers" to listOf(ayseDemir, keremOz, currentUser),
         "mobile-dev" to listOf(mehmetKaya, nazliAydin, currentUser),
         "startup-tr" to listOf(keremOz, ahmetYilmaz, currentUser),
     )
 
-    private val groupPosts: Map<String, List<Post>> = mapOf(
+    private val groupPosts: MutableMap<String, List<Post>> = mutableMapOf(
         "tech-ai" to listOf(
             Post(
                 id = "g1",
@@ -168,12 +179,69 @@ object GroupMockData {
         ),
     )
 
-    fun initialGroups(): List<GroupUiModel> = groups.map { it.copy() }
+    private val groupsState = MutableStateFlow(initialGroups)
+
+    fun groupsFlow(): StateFlow<List<GroupUiModel>> = groupsState.asStateFlow()
+
+    fun initialGroups(): List<GroupUiModel> = groupsState.value
 
     fun groupDetail(groupId: String): GroupDetailUiModel? {
-        val group = groups.find { it.id == groupId } ?: return null
+        val group = groupsState.value.find { it.id == groupId } ?: return null
         val members = groupMembers[groupId] ?: emptyList()
         val posts = groupPosts[groupId] ?: emptyList()
         return GroupDetailUiModel(group = group, members = members, posts = posts)
     }
+
+    fun groupDetailFlow(groupId: String): Flow<GroupDetailUiModel?> =
+        groupsState.map { groups ->
+            val group = groups.find { it.id == groupId } ?: return@map null
+            val members = groupMembers[groupId] ?: emptyList()
+            val posts = groupPosts[groupId] ?: emptyList()
+            GroupDetailUiModel(group = group, members = members, posts = posts)
+        }
+
+    fun updateGroup(groupId: String, transform: (GroupUiModel) -> GroupUiModel) {
+        var updatedGroup: GroupUiModel? = null
+        groupsState.update { groups ->
+            groups.map { group ->
+                if (group.id == groupId) {
+                    transform(group).also { updatedGroup = it }
+                } else {
+                    group
+                }
+            }
+        }
+        updatedGroup?.let { group ->
+            val members = groupMembers[groupId] ?: emptyList()
+            if (members.none { it.id == group.admin.id }) {
+                groupMembers[groupId] = members + group.admin
+            }
+        }
+    }
+
+    fun toggleJoin(groupId: String) {
+        updateGroup(groupId) { group ->
+            val joined = !group.isJoined
+            group.copy(
+                isJoined = joined,
+                membersCount = (group.membersCount + if (joined) 1 else -1).coerceAtLeast(0)
+            )
+        }
+    }
+
+    fun deleteGroup(groupId: String) {
+        groupsState.update { groups -> groups.filterNot { it.id == groupId } }
+        groupMembers.remove(groupId)
+        groupPosts.remove(groupId)
+    }
+
+    fun createGroup(group: GroupUiModel) {
+        groupsState.update { groups -> listOf(group) + groups }
+        groupMembers.putIfAbsent(group.id, listOf(group.admin))
+        if (!groupPosts.containsKey(group.id)) {
+            groupPosts[group.id] = emptyList()
+        }
+    }
+
+    fun members(groupId: String): List<GroupUserUiModel> = groupMembers[groupId] ?: emptyList()
 }
