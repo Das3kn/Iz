@@ -322,7 +322,7 @@ private fun GroupDetailHeader(
             ) {
                 // Avatar — alt-sola
                 AsyncImage(
-                    model = group.imageUrl,
+                    model = group.avatarUrl,
                     contentDescription = group.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

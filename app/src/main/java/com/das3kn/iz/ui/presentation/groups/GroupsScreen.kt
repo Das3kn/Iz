@@ -171,11 +171,13 @@ fun GroupsScreen(
             onGroupImageUrlChange = { groupImageUrl = it },
             onDismiss = { isCreateGroupOpen = false },
             onCreate = {
+                val newGroupImage = groupImageUrl.trim().ifBlank { DEFAULT_GROUP_IMAGE }
                 val newGroup = GroupUiModel(
                     id = System.currentTimeMillis().toString(),
                     name = groupName.trim(),
                     description = groupDescription.trim(),
-                    imageUrl = groupImageUrl.trim().ifBlank { DEFAULT_GROUP_IMAGE },
+                    imageUrl = newGroupImage,
+                    avatarUrl = newGroupImage,
                     membersCount = 1,
                     postsCount = 0,
                     isJoined = true,
