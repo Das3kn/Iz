@@ -67,6 +67,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.das3kn.iz.ui.presentation.auth.AuthViewModel
@@ -98,7 +100,7 @@ fun CreatePostScreen(
     val hasMedia = uiState.selectedMediaUris.isNotEmpty()
     val withinCharacterLimit = uiState.content.length <= characterLimit
 
-    var showMediaInput by rememberSaveable { mutableStateOf(false) }
+    var mediaDialogTab by rememberSaveable { mutableStateOf<MediaSelectionTab?>(null) }
     var selectedMediaTab by rememberSaveable { mutableStateOf(IMAGE) }
     val canAddMoreMedia = uiState.selectedMediaUris.size < 4
     val canPost = (hasContent || hasMedia) && withinCharacterLimit && !uiState.isLoading
@@ -110,12 +112,12 @@ fun CreatePostScreen(
         onImageSelected = { uri ->
             viewModel.addMediaUri(uri, false)
             selectedMediaTab = IMAGE
-            showMediaInput = false
+            mediaDialogTab = null
         },
         onVideoSelected = { uri ->
             viewModel.addMediaUri(uri, true)
             selectedMediaTab = VIDEO
-            showMediaInput = false
+            mediaDialogTab = null
         }
     )
 
@@ -126,7 +128,7 @@ fun CreatePostScreen(
             pendingImageUri?.let { uri ->
                 viewModel.addMediaUri(uri, false)
                 selectedMediaTab = IMAGE
-                showMediaInput = false
+                mediaDialogTab = null
             }
         }
         pendingImageUri = null
@@ -139,7 +141,7 @@ fun CreatePostScreen(
             pendingVideoUri?.let { uri ->
                 viewModel.addMediaUri(uri, true)
                 selectedMediaTab = VIDEO
-                showMediaInput = false
+                mediaDialogTab = null
             }
         }
         pendingVideoUri = null
@@ -147,7 +149,7 @@ fun CreatePostScreen(
 
     LaunchedEffect(canAddMoreMedia) {
         if (!canAddMoreMedia) {
-            showMediaInput = false
+            mediaDialogTab = null
         }
     }
 
@@ -177,14 +179,15 @@ fun CreatePostScreen(
                 modifier = Modifier.navigationBarsPadding(),
                 imageCount = uiState.selectedMediaUris.count { !it.isVideo },
                 videoCount = uiState.selectedMediaUris.count { it.isVideo },
-                showMediaInput = showMediaInput,
                 canAddMoreMedia = canAddMoreMedia,
                 onRequestImage = {
-                    showMediaInput = true
+                    if (!canAddMoreMedia) return@CreatePostBottomBar
+                    mediaDialogTab = IMAGE
                     selectedMediaTab = IMAGE
                 },
                 onRequestVideo = {
-                    showMediaInput = true
+                    if (!canAddMoreMedia) return@CreatePostBottomBar
+                    mediaDialogTab = VIDEO
                     selectedMediaTab = VIDEO
                 }
             )
@@ -354,56 +357,58 @@ fun CreatePostScreen(
                     }
                 }
 
-                if (showMediaInput) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    MediaInputCard(
-                        selectedTab = selectedMediaTab,
-                        onClose = {
-                            showMediaInput = false
-                        },
-                        onTabSelected = { selectedMediaTab = it },
-                        onConfirmSelection = { tab, source ->
-                            if (!canAddMoreMedia) return@MediaInputCard
-
-                            when (source) {
-                                MediaSourceOption.GALLERY -> {
-                                    if (MediaPicker.hasStoragePermission(context)) {
-                                        if (tab == IMAGE) {
-                                            mediaPicker.pickImage()
-                                        } else {
-                                            mediaPicker.pickVideo()
-                                        }
-                                    } else {
-                                        mediaPicker.requestPermissions()
-                                    }
-                                }
-
-                                MediaSourceOption.CAMERA -> {
-                                    if (MediaPicker.hasCameraPermission(context)) {
-                                        if (tab == IMAGE) {
-                                            val imageFile = MediaPicker.createImageFile(context)
-                                            val uri = MediaPicker.getImageUri(context, imageFile)
-                                            pendingImageUri = uri
-                                            cameraLauncher.launch(uri)
-                                        } else {
-                                            val videoFile = MediaPicker.createVideoFile(context)
-                                            val uri = MediaPicker.getVideoUri(context, videoFile)
-                                            pendingVideoUri = uri
-                                            videoCameraLauncher.launch(uri)
-                                        }
-                                    } else {
-                                        mediaPicker.requestPermissions()
-                                    }
-                                }
-                            }
-                        },
-                        canAddMoreMedia = canAddMoreMedia
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(120.dp))
             }
         }
+    }
+
+    mediaDialogTab?.let { dialogTab ->
+        MediaSelectionDialog(
+            selectedTab = dialogTab,
+            onDismiss = { mediaDialogTab = null },
+            onTabSelected = {
+                selectedMediaTab = it
+                mediaDialogTab = it
+            },
+            onConfirmSelection = { tab, source ->
+                if (!canAddMoreMedia) return@MediaSelectionDialog
+
+                when (source) {
+                    MediaSourceOption.GALLERY -> {
+                        if (MediaPicker.hasStoragePermission(context)) {
+                            if (tab == IMAGE) {
+                                mediaPicker.pickImage()
+                            } else {
+                                mediaPicker.pickVideo()
+                            }
+                        } else {
+                            mediaPicker.requestPermissions()
+                        }
+                    }
+
+                    MediaSourceOption.CAMERA -> {
+                        if (MediaPicker.hasCameraPermission(context)) {
+                            if (tab == IMAGE) {
+                                val imageFile = MediaPicker.createImageFile(context)
+                                val uri = MediaPicker.getImageUri(context, imageFile)
+                                pendingImageUri = uri
+                                cameraLauncher.launch(uri)
+                            } else {
+                                val videoFile = MediaPicker.createVideoFile(context)
+                                val uri = MediaPicker.getVideoUri(context, videoFile)
+                                pendingVideoUri = uri
+                                videoCameraLauncher.launch(uri)
+                            }
+                        } else {
+                            mediaPicker.requestPermissions()
+                        }
+                    }
+                }
+
+                mediaDialogTab = null
+            },
+            canAddMoreMedia = canAddMoreMedia
+        )
     }
 }
 
@@ -542,18 +547,42 @@ private fun MediaPreviewItem(
 }
 
 @Composable
-private fun MediaInputCard(
+private fun MediaSelectionDialog(
+    selectedTab: MediaSelectionTab,
+    onDismiss: () -> Unit,
+    onTabSelected: (MediaSelectionTab) -> Unit,
+    onConfirmSelection: (MediaSelectionTab, MediaSourceOption) -> Unit,
+    canAddMoreMedia: Boolean
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+        ) {
+            MediaSelectionCard(
+                selectedTab = selectedTab,
+                onClose = onDismiss,
+                onTabSelected = onTabSelected,
+                onConfirmSelection = onConfirmSelection,
+                canAddMoreMedia = canAddMoreMedia
+            )
+        }
+    }
+}
+
+@Composable
+private fun MediaSelectionCard(
     selectedTab: MediaSelectionTab,
     onClose: () -> Unit,
     onTabSelected: (MediaSelectionTab) -> Unit,
     onConfirmSelection: (MediaSelectionTab, MediaSourceOption) -> Unit,
     canAddMoreMedia: Boolean
 ) {
-    var selectedSource by rememberSaveable { mutableStateOf(MediaSourceOption.GALLERY) }
-
-    LaunchedEffect(selectedTab) {
-        selectedSource = MediaSourceOption.GALLERY
-    }
+    var selectedSource by rememberSaveable(selectedTab) { mutableStateOf(MediaSourceOption.GALLERY) }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -684,7 +713,6 @@ private fun CreatePostBottomBar(
     modifier: Modifier = Modifier,
     imageCount: Int,
     videoCount: Int,
-    showMediaInput: Boolean,
     canAddMoreMedia: Boolean,
     onRequestImage: () -> Unit,
     onRequestVideo: () -> Unit
@@ -708,7 +736,7 @@ private fun CreatePostBottomBar(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = onRequestImage,
-                            enabled = !showMediaInput && canAddMoreMedia,
+                            enabled = canAddMoreMedia,
                             colors = IconButtonDefaults.iconButtonColors(
                                 contentColor = Color(0xFF8B5CF6),
                                 disabledContentColor = Color(0xFF8B5CF6).copy(alpha = 0.4f)
@@ -719,7 +747,7 @@ private fun CreatePostBottomBar(
 
                         IconButton(
                             onClick = onRequestVideo,
-                            enabled = !showMediaInput && canAddMoreMedia,
+                            enabled = canAddMoreMedia,
                             colors = IconButtonDefaults.iconButtonColors(
                                 contentColor = Color(0xFF06B6D4),
                                 disabledContentColor = Color(0xFF06B6D4).copy(alpha = 0.4f)
