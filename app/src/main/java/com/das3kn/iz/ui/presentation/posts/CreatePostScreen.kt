@@ -709,23 +709,7 @@ private fun CreatePostBottomBar(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        IconButton(
-                            onClick = {},
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = Color(0xFF6B7280)
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Filled.LocationOn, contentDescription = "Konum")
-                        }
 
-                        IconButton(
-                            onClick = {},
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = Color(0xFF6B7280)
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Filled.Mood, contentDescription = "Duygu")
-                        }
                     }
                 }
 
