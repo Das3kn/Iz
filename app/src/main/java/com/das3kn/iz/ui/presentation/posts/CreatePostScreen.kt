@@ -1,7 +1,11 @@
 package com.das3kn.iz.ui.presentation.posts
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,20 +20,21 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mood
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,25 +54,29 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.das3kn.iz.ui.presentation.auth.AuthViewModel
 import com.das3kn.iz.ui.presentation.posts.MediaSelectionTab.IMAGE
 import com.das3kn.iz.ui.presentation.posts.MediaSelectionTab.VIDEO
+import com.das3kn.iz.utils.MediaPicker
+import com.das3kn.iz.utils.rememberMediaPickerLauncher
 
 private enum class MediaSelectionTab { IMAGE, VIDEO }
+private enum class MediaSourceOption { GALLERY, CAMERA }
 
 @Composable
 fun CreatePostScreen(
@@ -91,10 +100,56 @@ fun CreatePostScreen(
 
     var showMediaInput by rememberSaveable { mutableStateOf(false) }
     var selectedMediaTab by rememberSaveable { mutableStateOf(IMAGE) }
-    var mediaUrl by rememberSaveable { mutableStateOf("") }
-
     val canAddMoreMedia = uiState.selectedMediaUris.size < 4
     val canPost = (hasContent || hasMedia) && withinCharacterLimit && !uiState.isLoading
+
+    var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingVideoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val mediaPicker = rememberMediaPickerLauncher(
+        onImageSelected = { uri ->
+            viewModel.addMediaUri(uri, false)
+            selectedMediaTab = IMAGE
+            showMediaInput = false
+        },
+        onVideoSelected = { uri ->
+            viewModel.addMediaUri(uri, true)
+            selectedMediaTab = VIDEO
+            showMediaInput = false
+        }
+    )
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            pendingImageUri?.let { uri ->
+                viewModel.addMediaUri(uri, false)
+                selectedMediaTab = IMAGE
+                showMediaInput = false
+            }
+        }
+        pendingImageUri = null
+    }
+
+    val videoCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CaptureVideo()
+    ) { success ->
+        if (success) {
+            pendingVideoUri?.let { uri ->
+                viewModel.addMediaUri(uri, true)
+                selectedMediaTab = VIDEO
+                showMediaInput = false
+            }
+        }
+        pendingVideoUri = null
+    }
+
+    LaunchedEffect(canAddMoreMedia) {
+        if (!canAddMoreMedia) {
+            showMediaInput = false
+        }
+    }
 
     LaunchedEffect(uiState.isPostCreated) {
         if (uiState.isPostCreated) {
@@ -303,21 +358,46 @@ fun CreatePostScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     MediaInputCard(
                         selectedTab = selectedMediaTab,
-                        mediaUrl = mediaUrl,
                         onClose = {
                             showMediaInput = false
-                            mediaUrl = ""
                         },
                         onTabSelected = { selectedMediaTab = it },
-                        onUrlChange = { mediaUrl = it },
-                        onAddMedia = {
-                            val uri = mediaUrl.trim().toUri()
-                            viewModel.addMediaUri(uri, selectedMediaTab == VIDEO)
-                            mediaUrl = ""
-                            showMediaInput = false
-                            selectedMediaTab = IMAGE
+                        onConfirmSelection = { tab, source ->
+                            if (!canAddMoreMedia) return@MediaInputCard
+
+                            when (source) {
+                                MediaSourceOption.GALLERY -> {
+                                    if (MediaPicker.hasStoragePermission(context)) {
+                                        if (tab == IMAGE) {
+                                            mediaPicker.pickImage()
+                                        } else {
+                                            mediaPicker.pickVideo()
+                                        }
+                                    } else {
+                                        mediaPicker.requestPermissions()
+                                    }
+                                }
+
+                                MediaSourceOption.CAMERA -> {
+                                    if (MediaPicker.hasCameraPermission(context)) {
+                                        if (tab == IMAGE) {
+                                            val imageFile = MediaPicker.createImageFile(context)
+                                            val uri = MediaPicker.getImageUri(context, imageFile)
+                                            pendingImageUri = uri
+                                            cameraLauncher.launch(uri)
+                                        } else {
+                                            val videoFile = MediaPicker.createVideoFile(context)
+                                            val uri = MediaPicker.getVideoUri(context, videoFile)
+                                            pendingVideoUri = uri
+                                            videoCameraLauncher.launch(uri)
+                                        }
+                                    } else {
+                                        mediaPicker.requestPermissions()
+                                    }
+                                }
+                            }
                         },
-                        canAdd = mediaUrl.trim().isNotEmpty() && canAddMoreMedia
+                        canAddMoreMedia = canAddMoreMedia
                     )
                 }
 
@@ -464,13 +544,17 @@ private fun MediaPreviewItem(
 @Composable
 private fun MediaInputCard(
     selectedTab: MediaSelectionTab,
-    mediaUrl: String,
     onClose: () -> Unit,
     onTabSelected: (MediaSelectionTab) -> Unit,
-    onUrlChange: (String) -> Unit,
-    onAddMedia: () -> Unit,
-    canAdd: Boolean
+    onConfirmSelection: (MediaSelectionTab, MediaSourceOption) -> Unit,
+    canAddMoreMedia: Boolean
 ) {
+    var selectedSource by rememberSaveable { mutableStateOf(MediaSourceOption.GALLERY) }
+
+    LaunchedEffect(selectedTab) {
+        selectedSource = MediaSourceOption.GALLERY
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -534,56 +618,48 @@ private fun MediaInputCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextField(
-                value = mediaUrl,
-                onValueChange = onUrlChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(if (selectedTab == IMAGE) "Fotoğraf URL'si girin" else "Video URL'si girin")
-                },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedIndicatorColor = Color(0xFF8B5CF6),
-                    unfocusedIndicatorColor = Color(0xFFE5E7EB),
-                    cursorColor = Color(0xFF8B5CF6)
-                ),
-                shape = RoundedCornerShape(16.dp)
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                val galleryTitle = if (selectedTab == IMAGE) "Galeriden Fotoğraf Seç" else "Galeriden Video Seç"
+                val cameraTitle = if (selectedTab == IMAGE) "Kamera ile Fotoğraf Çek" else "Kamera ile Video Çek"
+                val gallerySubtitle = "Telefon galerisinden paylaşımına ekle"
+                val cameraSubtitle = "Anında çekim yap"
 
-            if (selectedTab == IMAGE && mediaUrl.isNotBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    tonalElevation = 1.dp
-                ) {
-                    AsyncImage(
-                        model = mediaUrl,
-                        contentDescription = null,
-                        modifier = Modifier.clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
+                MediaSourceSelectionOption(
+                    icon = if (selectedTab == IMAGE) Icons.Filled.Image else Icons.Filled.PlayArrow,
+                    title = galleryTitle,
+                    subtitle = gallerySubtitle,
+                    isSelected = selectedSource == MediaSourceOption.GALLERY,
+                    enabled = canAddMoreMedia,
+                    onClick = { selectedSource = MediaSourceOption.GALLERY }
+                )
 
-            if (selectedTab == VIDEO) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "YouTube, Vimeo veya direkt video URL'si ekleyebilirsiniz",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF6B7280)
+                MediaSourceSelectionOption(
+                    icon = if (selectedTab == IMAGE) Icons.Filled.PhotoCamera else Icons.Filled.Videocam,
+                    title = cameraTitle,
+                    subtitle = cameraSubtitle,
+                    isSelected = selectedSource == MediaSourceOption.CAMERA,
+                    enabled = canAddMoreMedia,
+                    onClick = { selectedSource = MediaSourceOption.CAMERA }
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = if (selectedTab == VIDEO) {
+                    "Galeriden video seçebilir veya kamera ile yeni bir video çekebilirsin."
+                } else {
+                    "Galeriden fotoğraf seçebilir veya kamera ile yeni bir fotoğraf çekebilirsin."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF6B7280)
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = onAddMedia,
-                enabled = canAdd,
+                onClick = { onConfirmSelection(selectedTab, selectedSource) },
+                enabled = canAddMoreMedia,
                 modifier = Modifier.fillMaxWidth(),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
@@ -730,6 +806,82 @@ private fun CreatePostBottomBar(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaSourceSelectionOption(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = if (isSelected) Color(0xFFEDE9FE) else Color.White
+    val borderColor = if (isSelected) Color(0xFF8B5CF6) else Color(0xFFE5E7EB)
+    val iconTint = if (isSelected) Color(0xFF7C3AED) else Color(0xFF6B7280)
+    val titleColor = if (isSelected) Color(0xFF4C1D95) else Color(0xFF1F2937)
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else 0.5f),
+        shape = RoundedCornerShape(16.dp),
+        color = backgroundColor,
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled) { onClick() }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isSelected) Color(0xFF8B5CF6).copy(alpha = 0.15f) else Color(0xFFF3F4F6)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = titleColor
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+            }
+
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = Color(0xFF8B5CF6)
+                )
             }
         }
     }
