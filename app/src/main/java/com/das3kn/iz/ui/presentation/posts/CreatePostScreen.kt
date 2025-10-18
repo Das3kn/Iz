@@ -1,9 +1,6 @@
 package com.das3kn.iz.ui.presentation.posts
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,8 +20,10 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
@@ -32,25 +31,17 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -58,7 +49,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,23 +57,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.das3kn.iz.R
 import com.das3kn.iz.ui.presentation.auth.AuthViewModel
-import com.das3kn.iz.utils.MediaPicker
-import com.das3kn.iz.utils.rememberMediaPickerLauncher
-import java.io.File
+import com.das3kn.iz.ui.presentation.posts.MediaSelectionTab.IMAGE
+import com.das3kn.iz.ui.presentation.posts.MediaSelectionTab.VIDEO
 
 private enum class MediaSelectionTab { IMAGE, VIDEO }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePostScreen(
     onNavigateBack: () -> Unit,
@@ -93,47 +78,23 @@ fun CreatePostScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val userProfileState by authViewModel.userProfile.collectAsState()
+    val isLoadingProfile = userProfileState == null
+
+    val scrollState = rememberScrollState()
     val context = LocalContext.current
 
-    val userProfile by authViewModel.userProfile.collectAsState()
-    val isLoadingProfile = userProfile == null
-
     val characterLimit = 280
+    val hasContent = uiState.content.trim().isNotEmpty()
+    val hasMedia = uiState.selectedMediaUris.isNotEmpty()
+    val withinCharacterLimit = uiState.content.length <= characterLimit
 
     var showMediaInput by rememberSaveable { mutableStateOf(false) }
-    var selectedMediaTab by rememberSaveable { mutableStateOf(MediaSelectionTab.IMAGE) }
+    var selectedMediaTab by rememberSaveable { mutableStateOf(IMAGE) }
     var mediaUrl by rememberSaveable { mutableStateOf("") }
 
-    val mediaPicker = rememberMediaPickerLauncher(
-        onImageSelected = { uri ->
-            viewModel.addMediaUri(uri, false)
-        },
-        onVideoSelected = { uri ->
-            viewModel.addMediaUri(uri, true)
-        },
-        onPermissionDenied = { }
-    )
-
-    var currentCameraFile by remember { mutableStateOf<File?>(null) }
-    var currentVideoFile by remember { mutableStateOf<File?>(null) }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && currentCameraFile != null) {
-            val uri = MediaPicker.getImageUri(context, currentCameraFile!!)
-            viewModel.addMediaUri(uri, false)
-        }
-    }
-
-    val videoCameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CaptureVideo()
-    ) { success ->
-        if (success && currentVideoFile != null) {
-            val uri = MediaPicker.getVideoUri(context, currentVideoFile!!)
-            viewModel.addMediaUri(uri, true)
-        }
-    }
+    val canAddMoreMedia = uiState.selectedMediaUris.size < 4
+    val canPost = (hasContent || hasMedia) && withinCharacterLimit && !uiState.isLoading
 
     LaunchedEffect(uiState.isPostCreated) {
         if (uiState.isPostCreated) {
@@ -142,733 +103,654 @@ fun CreatePostScreen(
         }
     }
 
-    val canPost = (uiState.content.isNotBlank() ||
-        uiState.selectedMediaUris.isNotEmpty() ||
-        uiState.selectedImages.isNotEmpty()) && !uiState.isLoading
-    val canAddMoreMedia = uiState.selectedMediaUris.size < 4
-
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+        containerColor = Color.White,
         topBar = {
-            Surface(
-                tonalElevation = 1.dp,
-                shadowElevation = 4.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "Geri")
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = if (groupId.isNullOrBlank()) "Yeni Paylaşım" else "Gruba Paylaş",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Button(
-                        onClick = { viewModel.createPost(context) },
-                        enabled = canPost,
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                        ),
-                        contentPadding = ButtonDefaults.ContentPadding
-                    ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                text = "Paylaş",
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
-                    }
-                }
-            }
+            CreatePostTopBar(
+                title = if (groupId.isNullOrBlank()) "Yeni Paylaşım" else "Gruba Paylaş",
+                isLoading = uiState.isLoading,
+                canPost = canPost,
+                onNavigateBack = onNavigateBack,
+                onShare = { viewModel.createPost(context) }
+            )
         },
         bottomBar = {
-            Surface(shadowElevation = 8.dp) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = {
-                                    showMediaInput = true
-                                    selectedMediaTab = MediaSelectionTab.IMAGE
-                                },
-                                enabled = !showMediaInput && canAddMoreMedia,
-                                colors = IconButtonDefaults.iconButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Icon(Icons.Filled.Image, contentDescription = "Fotoğraf Ekle")
-                            }
-                            IconButton(
-                                onClick = {
-                                    showMediaInput = true
-                                    selectedMediaTab = MediaSelectionTab.VIDEO
-                                },
-                                enabled = !showMediaInput && canAddMoreMedia,
-                                colors = IconButtonDefaults.iconButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.tertiary
-                                )
-                            ) {
-                                Icon(Icons.Filled.PlayArrow, contentDescription = "Video Ekle")
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Divider(
-                                modifier = Modifier
-                                    .height(24.dp)
-                                    .width(1.dp),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(onClick = { }, colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )) {
-                                Icon(Icons.Filled.LocationOn, contentDescription = "Konum")
-                            }
-                            IconButton(onClick = { }, colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )) {
-                                Icon(Icons.Filled.Mood, contentDescription = "Duygu")
-                            }
-                        }
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            val imageCount = uiState.selectedMediaUris.count { !it.isVideo }
-                            val videoCount = uiState.selectedMediaUris.count { it.isVideo }
-                            if (imageCount > 0) {
-                                AssistChip(
-                                    onClick = {},
-                                    label = { Text("$imageCount fotoğraf") },
-                                    enabled = false
-                                )
-                            }
-                            if (videoCount > 0) {
-                                AssistChip(
-                                    onClick = {},
-                                    label = { Text("$videoCount video") },
-                                    enabled = false
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "İpucu: En fazla 4 medya ekleyebilirsiniz. Fotoğraf ve videoları karıştırabilirsiniz.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 16.sp
-                            )
-                        }
-                    }
+            CreatePostBottomBar(
+                modifier = Modifier.navigationBarsPadding(),
+                imageCount = uiState.selectedMediaUris.count { !it.isVideo },
+                videoCount = uiState.selectedMediaUris.count { it.isVideo },
+                showMediaInput = showMediaInput,
+                canAddMoreMedia = canAddMoreMedia,
+                onRequestImage = {
+                    showMediaInput = true
+                    selectedMediaTab = IMAGE
+                },
+                onRequestVideo = {
+                    showMediaInput = true
+                    selectedMediaTab = VIDEO
                 }
-            }
+            )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.White)
                 .imePadding()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .verticalScroll(scrollState)
         ) {
-            Row(verticalAlignment = Alignment.Top) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    if (isLoadingProfile) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        val avatarUrl = userProfile?.profileImageUrl?.takeIf { it.isNotBlank() }
-                        if (avatarUrl != null) {
-                            AsyncImage(
-                                model = avatarUrl,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF3F4F6)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when {
+                            isLoadingProfile -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                            userProfileState?.profileImageUrl?.isNotBlank() == true -> {
+                                AsyncImage(
+                                    model = userProfileState!!.profileImageUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            else -> {
+                                Text(
+                                    text = userProfileState?.displayName?.firstOrNull()?.uppercase()
+                                        ?: userProfileState?.username?.firstOrNull()?.uppercase()
+                                        ?: "U",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) {
+                        if (isLoadingProfile) {
+                            Surface(
+                                modifier = Modifier
+                                    .height(16.dp)
+                                    .width(120.dp),
+                                color = Color(0xFFE5E7EB),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {}
                         } else {
                             Text(
-                                text = userProfile?.displayName?.firstOrNull()?.uppercase()
-                                    ?: userProfile?.username?.firstOrNull()?.uppercase()
-                                    ?: "U",
+                                text = userProfileState?.displayName
+                                    ?: userProfileState?.username
+                                    ?: "Kullanıcı",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.SemiBold
                             )
+                        }
+
+                        Text(
+                            text = "Herkes görebilir",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF9CA3AF)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                TextField(
+                    value = uiState.content,
+                    onValueChange = viewModel::updateContent,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    placeholder = { Text("Ne düşünüyorsun?") },
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = Color(0xFF8B5CF6)
+                    )
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    val charColor = if (withinCharacterLimit) Color(0xFF9CA3AF) else Color(0xFFEF4444)
+                    Text(
+                        text = "${uiState.content.length} / $characterLimit",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = charColor
+                    )
+                }
+
+                if (uiState.error != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFFFFF1F2),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = uiState.error ?: "",
+                            modifier = Modifier.padding(16.dp),
+                            color = Color(0xFFB91C1C),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
+                if (uiState.selectedMediaUris.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = "Medya (${uiState.selectedMediaUris.size})",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val rows = uiState.selectedMediaUris.chunked(2)
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        rows.forEachIndexed { rowIndex, rowItems ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                rowItems.forEachIndexed { columnIndex, mediaItem ->
+                                    val absoluteIndex = rowIndex * 2 + columnIndex
+                                    MediaPreviewItem(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f),
+                                        item = mediaItem,
+                                        onRemove = { viewModel.removeMediaUri(absoluteIndex) }
+                                    )
+                                }
+                                if (rowItems.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.align(Alignment.CenterVertically)) {
-                    if (isLoadingProfile) {
-                        Surface(
-                            tonalElevation = 1.dp,
-                            modifier = Modifier
-                                .height(16.dp)
-                                .width(120.dp)
-                        ) {}
-                    } else {
-                        Text(
-                            text = userProfile?.displayName
-                                ?: userProfile?.username
-                                ?: "Kullanıcı",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+
+                if (showMediaInput) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    MediaInputCard(
+                        selectedTab = selectedMediaTab,
+                        mediaUrl = mediaUrl,
+                        onClose = {
+                            showMediaInput = false
+                            mediaUrl = ""
+                        },
+                        onTabSelected = { selectedMediaTab = it },
+                        onUrlChange = { mediaUrl = it },
+                        onAddMedia = {
+                            val uri = mediaUrl.trim().toUri()
+                            viewModel.addMediaUri(uri, selectedMediaTab == VIDEO)
+                            mediaUrl = ""
+                            showMediaInput = false
+                            selectedMediaTab = IMAGE
+                        },
+                        canAdd = mediaUrl.trim().isNotEmpty() && canAddMoreMedia
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(120.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreatePostTopBar(
+    title: String,
+    isLoading: Boolean,
+    canPost: Boolean,
+    onNavigateBack: () -> Unit,
+    onShare: () -> Unit
+) {
+    Surface(color = Color.White) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Geri"
                         )
                     }
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Herkes görebilir",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
+                }
+
+                Button(
+                    onClick = onShare,
+                    enabled = canPost,
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF8B5CF6),
+                        disabledContainerColor = Color(0xFF8B5CF6).copy(alpha = 0.5f),
+                        contentColor = Color.White
+                    )
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(text = "Paylaş")
+                    }
+                }
+            }
+            Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+        }
+    }
+}
+
+@Composable
+private fun MediaPreviewItem(
+    modifier: Modifier,
+    item: MediaItem,
+    onRemove: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (item.isVideo) Color(0xFF111827) else Color(0xFFF3F4F6)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (item.isVideo) {
+            AsyncImage(
+                model = item.uri,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alpha = 0.45f
+            )
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        } else {
+            AsyncImage(
+                model = item.uri,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        IconButton(
+            onClick = onRemove,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp)
+                .size(28.dp)
+                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Kaldır",
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp),
+            shape = RoundedCornerShape(50),
+            color = Color.Black.copy(alpha = 0.6f)
+        ) {
+            Text(
+                text = if (item.isVideo) "Video" else "Fotoğraf",
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+private fun MediaInputCard(
+    selectedTab: MediaSelectionTab,
+    mediaUrl: String,
+    onClose: () -> Unit,
+    onTabSelected: (MediaSelectionTab) -> Unit,
+    onUrlChange: (String) -> Unit,
+    onAddMedia: () -> Unit,
+    canAdd: Boolean
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color(0xFFF9FAFB)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Medya Ekle",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                IconButton(onClick = onClose) {
+                    Icon(imageVector = Icons.Filled.Close, contentDescription = "Kapat")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val tabs = listOf(IMAGE to "Fotoğraf", VIDEO to "Video")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                tabs.forEach { (tab, label) ->
+                    val isSelected = tab == selectedTab
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSelected) Color(0xFF8B5CF6) else Color.White,
+                        border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onTabSelected(tab) }
+                                .padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val icon = if (tab == IMAGE) Icons.Filled.Image else Icons.Filled.PlayArrow
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = if (isSelected) Color.White else Color(0xFF6B7280)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = label,
+                                color = if (isSelected) Color.White else Color(0xFF374151),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             TextField(
-                value = uiState.content,
-                onValueChange = { viewModel.updateContent(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp),
-                placeholder = { Text("Ne düşünüyorsun?") },
-                textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                value = mediaUrl,
+                onValueChange = onUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(if (selectedTab == IMAGE) "Fotoğraf URL'si girin" else "Video URL'si girin")
+                },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = MaterialTheme.colorScheme.primary
-                )
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedIndicatorColor = Color(0xFF8B5CF6),
+                    unfocusedIndicatorColor = Color(0xFFE5E7EB),
+                    cursorColor = Color(0xFF8B5CF6)
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                val charCountColor = if (uiState.content.length > characterLimit) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-                Text(
-                    text = "${uiState.content.length} / $characterLimit",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = charCountColor
-                )
-            }
-
-            if (uiState.error != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+            if (selectedTab == IMAGE && mediaUrl.isNotBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    tonalElevation = 1.dp
                 ) {
-                    Text(
-                        text = uiState.error ?: "",
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium
+                    AsyncImage(
+                        model = mediaUrl,
+                        contentDescription = null,
+                        modifier = Modifier.clip(RoundedCornerShape(16.dp)),
+                        contentScale = ContentScale.Crop
                     )
                 }
             }
 
-            if (uiState.selectedMediaUris.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(20.dp))
+            if (selectedTab == VIDEO) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Medya (${uiState.selectedMediaUris.size})",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    text = "YouTube, Vimeo veya direkt video URL'si ekleyebilirsiniz",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF6B7280)
                 )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = onAddMedia,
+                enabled = canAdd,
+                modifier = Modifier.fillMaxWidth(),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF8B5CF6),
+                    disabledContainerColor = Color(0xFF8B5CF6).copy(alpha = 0.4f)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Ekle")
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreatePostBottomBar(
+    modifier: Modifier = Modifier,
+    imageCount: Int,
+    videoCount: Int,
+    showMediaInput: Boolean,
+    canAddMoreMedia: Boolean,
+    onRequestImage: () -> Unit,
+    onRequestVideo: () -> Unit
+) {
+    Surface(color = Color.White, modifier = modifier) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val mediaRows = uiState.selectedMediaUris.chunked(2)
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    mediaRows.forEachIndexed { rowIndex, rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = onRequestImage,
+                            enabled = !showMediaInput && canAddMoreMedia,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = Color(0xFF8B5CF6),
+                                disabledContentColor = Color(0xFF8B5CF6).copy(alpha = 0.4f)
+                            )
                         ) {
-                            rowItems.forEachIndexed { columnIndex, mediaItem ->
-                                val absoluteIndex = rowIndex * 2 + columnIndex
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .background(
-                                            if (mediaItem.isVideo) Color.Black else MaterialTheme.colorScheme.surfaceVariant
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (mediaItem.isVideo) {
-                                        AsyncImage(
-                                            model = mediaItem.uri,
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop,
-                                            alpha = 0.6f
-                                        )
-                                        Icon(
-                                            imageVector = Icons.Filled.PlayArrow,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(40.dp)
-                                        )
-                                    } else {
-                                        AsyncImage(
-                                            model = mediaItem.uri,
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    }
+                            Icon(imageVector = Icons.Filled.Image, contentDescription = "Fotoğraf Ekle")
+                        }
 
-                                    IconButton(
-                                        onClick = { viewModel.removeMediaUri(absoluteIndex) },
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(8.dp)
-                                            .size(28.dp)
-                                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Close,
-                                            contentDescription = "Kaldır",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
+                        IconButton(
+                            onClick = onRequestVideo,
+                            enabled = !showMediaInput && canAddMoreMedia,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = Color(0xFF06B6D4),
+                                disabledContentColor = Color(0xFF06B6D4).copy(alpha = 0.4f)
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = "Video Ekle")
+                        }
 
-                                    Surface(
-                                        modifier = Modifier
-                                            .align(Alignment.BottomStart)
-                                            .padding(8.dp),
-                                        shape = RoundedCornerShape(50),
-                                        color = Color.Black.copy(alpha = 0.6f)
-                                    ) {
-                                        Text(
-                                            text = if (mediaItem.isVideo) "Video" else "Fotoğraf",
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = Color.White
-                                        )
-                                    }
-                                }
-                            }
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(24.dp)
+                                .background(Color(0xFFE5E7EB))
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        IconButton(
+                            onClick = {},
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = Color(0xFF6B7280)
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Filled.LocationOn, contentDescription = "Konum")
+                        }
+
+                        IconButton(
+                            onClick = {},
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = Color(0xFF6B7280)
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Filled.Mood, contentDescription = "Duygu")
                         }
                     }
                 }
-            }
 
-            if (uiState.selectedImages.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = "Seçilen Görseller",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
                 Spacer(modifier = Modifier.height(12.dp))
-                val legacyRows = uiState.selectedImages.chunked(2)
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    legacyRows.forEachIndexed { rowIndex, rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            rowItems.forEachIndexed { columnIndex, imageRes ->
-                                val absoluteIndex = rowIndex * 2 + columnIndex
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(20.dp))
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = imageRes),
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
 
-                                    IconButton(
-                                        onClick = {
-                                            val index = uiState.selectedImages.indexOf(imageRes)
-                                            if (index != -1) viewModel.removeImage(index)
-                                        },
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(8.dp)
-                                            .size(28.dp)
-                                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Close,
-                                            contentDescription = "Kaldır",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (imageCount > 0) {
+                        CountPill(
+                            text = "$imageCount fotoğraf",
+                            backgroundColor = Color(0xFFEDE9FE),
+                            contentColor = Color(0xFF6D28D9)
+                        )
+                    }
+                    if (videoCount > 0) {
+                        CountPill(
+                            text = "$videoCount video",
+                            backgroundColor = Color(0xFFDCF4FF),
+                            contentColor = Color(0xFF0E7490)
+                        )
                     }
                 }
-            }
 
-            if (showMediaInput) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    tonalElevation = 2.dp
+                    color = Color(0xFFF9FAFB),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Medya Ekle",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            TextButton(
-                                onClick = {
-                                    showMediaInput = false
-                                    mediaUrl = ""
-                                    selectedMediaTab = MediaSelectionTab.IMAGE
-                                }
-                            ) {
-                                Text("Kapat")
-                            }
-                        }
-
-                        val tabs = listOf(MediaSelectionTab.IMAGE, MediaSelectionTab.VIDEO)
-                        TabRow(
-                            selectedTabIndex = tabs.indexOf(selectedMediaTab),
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ) {
-                            tabs.forEach { tab ->
-                                Tab(
-                                    selected = tab == selectedMediaTab,
-                                    onClick = { selectedMediaTab = tab },
-                                    text = {
-                                        Text(
-                                            text = if (tab == MediaSelectionTab.IMAGE) "Fotoğraf" else "Video",
-                                            maxLines = 1
-                                        )
-                                    },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (tab == MediaSelectionTab.IMAGE) Icons.Filled.Image else Icons.Filled.PlayArrow,
-                                            contentDescription = null
-                                        )
-                                    }
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        TextField(
-                            value = mediaUrl,
-                            onValueChange = { mediaUrl = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = {
-                                Text(
-                                    text = if (selectedMediaTab == MediaSelectionTab.IMAGE) "Fotoğraf URL'si girin" else "Video URL'si girin"
-                                )
-                            },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            )
-                        )
-
-                        if (mediaUrl.isNotBlank() && selectedMediaTab == MediaSelectionTab.IMAGE) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight(),
-                                shape = RoundedCornerShape(16.dp),
-                                tonalElevation = 2.dp
-                            ) {
-                                AsyncImage(
-                                    model = mediaUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                        }
-
-                        if (selectedMediaTab == MediaSelectionTab.VIDEO) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "YouTube, Vimeo veya direkt video URL'si ekleyebilirsiniz",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = {
-                                val parsedUri: Uri = mediaUrl.trim().toUri()
-                                viewModel.addMediaUri(parsedUri, selectedMediaTab == MediaSelectionTab.VIDEO)
-                                mediaUrl = ""
-                                showMediaInput = false
-                                selectedMediaTab = MediaSelectionTab.IMAGE
-                            },
-                            enabled = mediaUrl.isNotBlank() && canAddMoreMedia,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text("Ekle")
-                        }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Text(
-                            text = "Alternatif seçenekler",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        if (MediaPicker.hasStoragePermission(context)) {
-                                            mediaPicker.pickImage()
-                                        } else {
-                                            mediaPicker.requestPermissions()
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                    ),
-                                    enabled = canAddMoreMedia
-                                ) {
-                                    Icon(Icons.Filled.Image, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Galeriden Fotoğraf")
-                                }
-                                Button(
-                                    onClick = {
-                                        if (MediaPicker.hasCameraPermission(context)) {
-                                            val file = MediaPicker.createImageFile(context)
-                                            currentCameraFile = file
-                                            val uri = MediaPicker.getImageUri(context, file)
-                                            cameraLauncher.launch(uri)
-                                        } else {
-                                            mediaPicker.requestPermissions()
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                    ),
-                                    enabled = canAddMoreMedia
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.camera),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Kamera")
-                                }
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        if (MediaPicker.hasStoragePermission(context)) {
-                                            mediaPicker.pickVideo()
-                                        } else {
-                                            mediaPicker.requestPermissions()
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                                    ),
-                                    enabled = canAddMoreMedia
-                                ) {
-                                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Video")
-                                }
-                                Button(
-                                    onClick = {
-                                        if (MediaPicker.hasCameraPermission(context)) {
-                                            val file = MediaPicker.createVideoFile(context)
-                                            currentVideoFile = file
-                                            val uri = MediaPicker.getVideoUri(context, file)
-                                            videoCameraLauncher.launch(uri)
-                                        } else {
-                                            mediaPicker.requestPermissions()
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                                    ),
-                                    enabled = canAddMoreMedia
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.video),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Video Çek")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Gönderi Ayarları",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                        modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Info,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = Color(0xFF6B7280),
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Herkes görebilir", style = MaterialTheme.typography.bodyMedium)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.LocationOn,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "💡 İpucu: En fazla 4 medya ekleyebilirsiniz. Fotoğraf ve videoları karıştırabilirsiniz.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF6B7280)
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Konum ekle", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(48.dp))
         }
+    }
+}
+
+@Composable
+private fun CountPill(
+    text: String,
+    backgroundColor: Color,
+    contentColor: Color
+) {
+    Surface(
+        color = backgroundColor,
+        shape = RoundedCornerShape(50)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = contentColor,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
