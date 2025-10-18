@@ -101,7 +101,6 @@ fun CreatePostScreen(
     val withinCharacterLimit = uiState.content.length <= characterLimit
 
     var mediaDialogTab by rememberSaveable { mutableStateOf<MediaSelectionTab?>(null) }
-    var selectedMediaTab by rememberSaveable { mutableStateOf(IMAGE) }
     val canAddMoreMedia = uiState.selectedMediaUris.size < 4
     val canPost = (hasContent || hasMedia) && withinCharacterLimit && !uiState.isLoading
 
@@ -111,12 +110,10 @@ fun CreatePostScreen(
     val mediaPicker = rememberMediaPickerLauncher(
         onImageSelected = { uri ->
             viewModel.addMediaUri(uri, false)
-            selectedMediaTab = IMAGE
             mediaDialogTab = null
         },
         onVideoSelected = { uri ->
             viewModel.addMediaUri(uri, true)
-            selectedMediaTab = VIDEO
             mediaDialogTab = null
         }
     )
@@ -127,7 +124,6 @@ fun CreatePostScreen(
         if (success) {
             pendingImageUri?.let { uri ->
                 viewModel.addMediaUri(uri, false)
-                selectedMediaTab = IMAGE
                 mediaDialogTab = null
             }
         }
@@ -140,7 +136,6 @@ fun CreatePostScreen(
         if (success) {
             pendingVideoUri?.let { uri ->
                 viewModel.addMediaUri(uri, true)
-                selectedMediaTab = VIDEO
                 mediaDialogTab = null
             }
         }
@@ -183,12 +178,10 @@ fun CreatePostScreen(
                 onRequestImage = {
                     if (!canAddMoreMedia) return@CreatePostBottomBar
                     mediaDialogTab = IMAGE
-                    selectedMediaTab = IMAGE
                 },
                 onRequestVideo = {
                     if (!canAddMoreMedia) return@CreatePostBottomBar
                     mediaDialogTab = VIDEO
-                    selectedMediaTab = VIDEO
                 }
             )
         }
@@ -366,29 +359,21 @@ fun CreatePostScreen(
         MediaSelectionDialog(
             selectedTab = dialogTab,
             onDismiss = { mediaDialogTab = null },
-            onTabSelected = {
-                selectedMediaTab = it
-                mediaDialogTab = it
-            },
-            onConfirmSelection = { tab, source ->
+            onConfirmSelection = { source ->
                 if (!canAddMoreMedia) return@MediaSelectionDialog
 
                 when (source) {
                     MediaSourceOption.GALLERY -> {
-                        if (MediaPicker.hasStoragePermission(context)) {
-                            if (tab == IMAGE) {
-                                mediaPicker.pickImage()
-                            } else {
-                                mediaPicker.pickVideo()
-                            }
+                        if (dialogTab == IMAGE) {
+                            mediaPicker.pickImage()
                         } else {
-                            mediaPicker.requestPermissions()
+                            mediaPicker.pickVideo()
                         }
                     }
 
                     MediaSourceOption.CAMERA -> {
                         if (MediaPicker.hasCameraPermission(context)) {
-                            if (tab == IMAGE) {
+                            if (dialogTab == IMAGE) {
                                 val imageFile = MediaPicker.createImageFile(context)
                                 val uri = MediaPicker.getImageUri(context, imageFile)
                                 pendingImageUri = uri
@@ -550,8 +535,7 @@ private fun MediaPreviewItem(
 private fun MediaSelectionDialog(
     selectedTab: MediaSelectionTab,
     onDismiss: () -> Unit,
-    onTabSelected: (MediaSelectionTab) -> Unit,
-    onConfirmSelection: (MediaSelectionTab, MediaSourceOption) -> Unit,
+    onConfirmSelection: (MediaSourceOption) -> Unit,
     canAddMoreMedia: Boolean
 ) {
     Dialog(
@@ -566,7 +550,6 @@ private fun MediaSelectionDialog(
             MediaSelectionCard(
                 selectedTab = selectedTab,
                 onClose = onDismiss,
-                onTabSelected = onTabSelected,
                 onConfirmSelection = onConfirmSelection,
                 canAddMoreMedia = canAddMoreMedia
             )
@@ -578,8 +561,7 @@ private fun MediaSelectionDialog(
 private fun MediaSelectionCard(
     selectedTab: MediaSelectionTab,
     onClose: () -> Unit,
-    onTabSelected: (MediaSelectionTab) -> Unit,
-    onConfirmSelection: (MediaSelectionTab, MediaSourceOption) -> Unit,
+    onConfirmSelection: (MediaSourceOption) -> Unit,
     canAddMoreMedia: Boolean
 ) {
     var selectedSource by rememberSaveable(selectedTab) { mutableStateOf(MediaSourceOption.GALLERY) }
@@ -606,46 +588,6 @@ private fun MediaSelectionCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            val tabs = listOf(IMAGE to "Fotoğraf", VIDEO to "Video")
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                tabs.forEach { (tab, label) ->
-                    val isSelected = tab == selectedTab
-                    Surface(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isSelected) Color(0xFF8B5CF6) else Color.White,
-                        border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE5E7EB))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onTabSelected(tab) }
-                                .padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val icon = if (tab == IMAGE) Icons.Filled.Image else Icons.Filled.PlayArrow
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = if (isSelected) Color.White else Color(0xFF6B7280)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = label,
-                                color = if (isSelected) Color.White else Color(0xFF374151),
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 val galleryTitle = if (selectedTab == IMAGE) "Galeriden Fotoğraf Seç" else "Galeriden Video Seç"
@@ -687,7 +629,7 @@ private fun MediaSelectionCard(
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { onConfirmSelection(selectedTab, selectedSource) },
+                onClick = { onConfirmSelection(selectedSource) },
                 enabled = canAddMoreMedia,
                 modifier = Modifier.fillMaxWidth(),
                 shape = CircleShape,
